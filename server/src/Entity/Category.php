@@ -7,15 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-use ApiPlatform\Action\PlaceholderAction;
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
-use Symfony\Component\Serializer\Annotation\Groups;
-use App\Controller\CategoryController;
-use ApiPlatform\Metadata\Put;
-
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
 #[ApiResource]

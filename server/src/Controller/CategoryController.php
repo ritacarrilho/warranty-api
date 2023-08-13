@@ -7,6 +7,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use  Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 
 class CategoryController extends AbstractController
 {
@@ -18,25 +19,24 @@ class CategoryController extends AbstractController
     }
 
     /**
-     *  @Route("/categories/{id}", name="get_one_category", methods={"GET"})
+     *  @Route("api/test/categories/{id}", name="get_one_category", methods={"GET"})
     */
-    public function get($id): JsonResponse
-    {
-        $customer = $this->categoryRepository->findOneBy(['id' => $id]);
-    
-        $data = [
-            'id' => $customer->getId(),
-            'label' => $customer->getLabel()
-        ];
-    
-        return new JsonResponse($data, Response::HTTP_OK);
+    public function getDetailCategory(int $id, SerializerInterface $serializer, CategoryRepository $categoryRepository): JsonResponse {
+
+        $category = $categoryRepository->find($id);
+        if ($category) {
+            $jsonCategory = $serializer->serialize($category, 'json');
+            return new JsonResponse($jsonCategory, Response::HTTP_OK, [], true);
+        }
+        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
     }
 
-    /**
-     * @Route("/categories", name="get_all_customers", methods={"GET"})
-     */
+
+    #[Route('/api/test', name:"get_all_categories", methods: ['GET'])]
+   
     public function getAll(): JsonResponse
     {
+
         $categories = $this->categoryRepository->findAll();
         $data = [];
 
