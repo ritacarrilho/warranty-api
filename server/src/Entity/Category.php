@@ -3,9 +3,23 @@
 namespace App\Entity;
 
 use App\Repository\CategoryRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
+use ApiPlatform\Action\PlaceholderAction;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use Symfony\Component\Serializer\Annotation\Groups;
+use App\Controller\CategoryController;
+use ApiPlatform\Metadata\Put;
+
+
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
+#[ApiResource]
+
 class Category
 {
     #[ORM\Id]
@@ -15,6 +29,14 @@ class Category
 
     #[ORM\Column(length: 100)]
     private ?string $label = null;
+
+    // #[ORM\OneToMany(mappedBy: 'category_id', targetEntity: Equipment::class, orphanRemoval: true)]
+    // private Collection $equipments;
+
+    // public function __construct()
+    // {
+    //     $this->equipments = new ArrayCollection();
+    // }
 
     public function getId(): ?int
     {
@@ -32,4 +54,34 @@ class Category
 
         return $this;
     }
+
+    // /**
+    //  * @return Collection<int, Equipment>
+    //  */
+    // public function getEquipments(): Collection
+    // {
+    //     return $this->equipments;
+    // }
+
+    // public function addEquipment(Equipment $equipment): static
+    // {
+    //     if (!$this->equipments->contains($equipment)) {
+    //         $this->equipments->add($equipment);
+    //         $equipment->setCategoryId($this);
+    //     }
+
+    //     return $this;
+    // }
+
+    // public function removeEquipment(Equipment $equipment): static
+    // {
+    //     if ($this->equipments->removeElement($equipment)) {
+    //         // set the owning side to null (unless already changed)
+    //         if ($equipment->getCategoryId() === $this) {
+    //             $equipment->setCategoryId(null);
+    //         }
+    //     }
+
+    //     return $this;
+    // }
 }

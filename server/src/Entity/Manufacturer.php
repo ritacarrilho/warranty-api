@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ManufacturerRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ManufacturerRepository::class)]
@@ -33,6 +35,14 @@ class Manufacturer
 
     #[ORM\Column(length: 150, nullable: true)]
     private ?string $country = null;
+
+    #[ORM\OneToMany(mappedBy: 'manufacturer_id', targetEntity: Warranty::class)]
+    private Collection $warranties;
+
+    public function __construct()
+    {
+        $this->warranties = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -119,6 +129,36 @@ class Manufacturer
     public function setCountry(?string $country): static
     {
         $this->country = $country;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Warranty>
+     */
+    public function getWarranties(): Collection
+    {
+        return $this->warranties;
+    }
+
+    public function addWarranty(Warranty $warranty): static
+    {
+        if (!$this->warranties->contains($warranty)) {
+            $this->warranties->add($warranty);
+            $warranty->setManufacturerId($this);
+        }
+
+        return $this;
+    }
+
+    public function removeWarranty(Warranty $warranty): static
+    {
+        if ($this->warranties->removeElement($warranty)) {
+            // set the owning side to null (unless already changed)
+            if ($warranty->getManufacturerId() === $this) {
+                $warranty->setManufacturerId(null);
+            }
+        }
 
         return $this;
     }
