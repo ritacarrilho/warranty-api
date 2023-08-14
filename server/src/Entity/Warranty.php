@@ -10,7 +10,6 @@ use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
 
 #[ORM\Entity(repositoryClass: WarrantyRepository::class)]
-#[ApiResource]
 class Warranty
 {
     #[ORM\Id]
@@ -27,8 +26,8 @@ class Warranty
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTimeInterface $end_date = null;
 
-    #[ORM\Column]
-    private ?bool $is_active = null;
+    #[ORM\Column(type: 'boolean')]
+    private ?bool $is_active = true;
 
     #[ORM\ManyToOne(inversedBy: 'warranties')]
     #[ORM\JoinColumn(nullable: false)]

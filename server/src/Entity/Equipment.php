@@ -10,7 +10,6 @@ use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
 
 #[ORM\Entity(repositoryClass: EquipmentRepository::class)]
-#[ApiResource]
 class Equipment
 {
     #[ORM\Id]
@@ -39,6 +38,10 @@ class Equipment
     #[ORM\ManyToOne(inversedBy: 'equipments')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Category $category_id = null;
+
+    #[ORM\ManyToOne(inversedBy: 'equipment')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Consumer $user_id = null;
 
     #[ORM\OneToMany(mappedBy: 'equipment_id', targetEntity: Warranty::class)]
     private Collection $warranties;
@@ -133,6 +136,18 @@ class Equipment
     public function setCategoryId(?Category $category_id): static
     {
         $this->category_id = $category_id;
+
+        return $this;
+    }
+
+    public function getUserId(): ?Consumer
+    {
+        return $this->user_id;
+    }
+
+    public function setUserId(?Consumer $user_id): static
+    {
+        $this->user_id = $user_id;
 
         return $this;
     }

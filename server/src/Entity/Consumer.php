@@ -3,11 +3,12 @@
 namespace App\Entity;
 
 use App\Repository\ConsumerRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
 
 #[ORM\Entity(repositoryClass: ConsumerRepository::class)]
-#[ApiResource]
 class Consumer
 {
     #[ORM\Id]
@@ -27,6 +28,14 @@ class Consumer
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user_id = null;
+
+    #[ORM\OneToMany(mappedBy: 'user_id', targetEntity: Equipment::class)]
+    private Collection $equipment;
+
+    public function __construct()
+    {
+        $this->equipment = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -77,6 +86,36 @@ class Consumer
     public function setUserId(User $user_id): static
     {
         $this->user_id = $user_id;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Equipment>
+     */
+    public function getEquipment(): Collection
+    {
+        return $this->equipment;
+    }
+
+    public function addEquipment(Equipment $equipment): static
+    {
+        if (!$this->equipment->contains($equipment)) {
+            $this->equipment->add($equipment);
+            $equipment->setUserId($this);
+        }
+
+        return $this;
+    }
+
+    public function removeEquipment(Equipment $equipment): static
+    {
+        if ($this->equipment->removeElement($equipment)) {
+            // set the owning side to null (unless already changed)
+            if ($equipment->getUserId() === $this) {
+                $equipment->setUserId(null);
+            }
+        }
 
         return $this;
     }
