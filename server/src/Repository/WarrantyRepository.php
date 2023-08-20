@@ -21,6 +21,15 @@ class WarrantyRepository extends ServiceEntityRepository
         parent::__construct($registry, Warranty::class);
     }
 
+    public function findOneByEquipment($value): ?Warranty
+    {
+       return $this->createQueryBuilder('w')
+           ->andWhere('w.equipment = :val')
+           ->setParameter('val', $value)
+           ->getQuery()
+           ->getOneOrNullResult();
+    }
+
 //    /**
 //     * @return Warranty[] Returns an array of Warranty objects
 //     */

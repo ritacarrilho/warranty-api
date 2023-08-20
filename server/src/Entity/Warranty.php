@@ -26,9 +26,6 @@ class Warranty
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTimeInterface $end_date = null;
 
-    #[ORM\Column(type: 'boolean')]
-    private ?bool $is_active = true;
-
     #[ORM\ManyToOne(inversedBy: 'warranties')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Equipment $equipment = null;
@@ -81,18 +78,6 @@ class Warranty
     public function setEndDate(\DateTimeInterface $end_date): static
     {
         $this->end_date = $end_date;
-
-        return $this;
-    }
-
-    public function isIsActive(): ?bool
-    {
-        return $this->is_active;
-    }
-
-    public function setIsActive(bool $is_active): static
-    {
-        $this->is_active = $is_active;
 
         return $this;
     }

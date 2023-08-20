@@ -21,6 +21,26 @@ class EquipmentRepository extends ServiceEntityRepository
         parent::__construct($registry, Equipment::class);
     }
 
+   public function findByUser($user): array
+   {
+       return $this->createQueryBuilder('e')
+           ->andWhere('e.is_active = 1')
+           ->andWhere('e.user = :user')
+           ->setParameter('user', $user)
+           ->getQuery()
+           ->getResult();
+   }
+
+   public function findByHistoric($userId): array
+   {
+       return $this->createQueryBuilder('e')
+           ->andWhere('e.is_active = 0')
+           ->andWhere('e.user = :userId')
+           ->setParameter('userId', $userId)
+           ->getQuery()
+           ->getResult();
+   }
+
     public function findEquipmentById(int $equipmentId, int $userId): ?Equipment
     {
         return $this->createQueryBuilder('e')

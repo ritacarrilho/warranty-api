@@ -37,12 +37,12 @@ class Manufacturer
     #[ORM\Column(length: 150, nullable: true)]
     private ?string $country = null;
 
-    #[ORM\OneToMany(mappedBy: 'manufacturer', targetEntity: Warranty::class)]
-    private Collection $warranties;
+    // #[ORM\OneToMany(mappedBy: 'manufacturer', targetEntity: Warranty::class)]
+    // private Collection $warranties;
 
     public function __construct()
     {
-        $this->warranties = new ArrayCollection();
+        // $this->warranties = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -134,33 +134,33 @@ class Manufacturer
         return $this;
     }
 
-    /**
-     * @return Collection<int, Warranty>
-     */
-    public function getWarranties(): Collection
-    {
-        return $this->warranties;
-    }
+    // /**
+    //  * @return Collection<int, Warranty>
+    //  */
+    // public function getWarranties(): Collection
+    // {
+    //     return $this->warranties;
+    // }
 
-    public function addWarranty(Warranty $warranty): static
-    {
-        if (!$this->warranties->contains($warranty)) {
-            $this->warranties->add($warranty);
-            $warranty->setManufacturer($this);
-        }
+    // public function addWarranty(Warranty $warranty): static
+    // {
+    //     if (!$this->warranties->contains($warranty)) {
+    //         $this->warranties->add($warranty);
+    //         $warranty->setManufacturer($this);
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
-    public function removeWarranty(Warranty $warranty): static
-    {
-        if ($this->warranties->removeElement($warranty)) {
-            // set the owning side to null (unless already changed)
-            if ($warranty->getManufacturer() === $this) {
-                $warranty->setManufacturer(null);
-            }
-        }
+    // public function removeWarranty(Warranty $warranty): static
+    // {
+    //     if ($this->warranties->removeElement($warranty)) {
+    //         // set the owning side to null (unless already changed)
+    //         if ($warranty->getManufacturer() === $this) {
+    //             $warranty->setManufacturer(null);
+    //         }
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 }

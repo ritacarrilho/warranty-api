@@ -23,8 +23,40 @@ class CategoryController extends AbstractController
         $this->categoryRepository = $categoryRepository;
     }
 
-    #[Route('api/categories/{id}', name:"getCategory", methods:["GET"])]
-    public function showCategory(int $id, SerializerInterface $serializer, CategoryRepository $categoryRepository): JsonResponse 
+    #[Route('/api/categories', name:"get_categories", methods: ['GET'])]
+    public function list(): JsonResponse
+    {
+        $categories = $this->categoryRepository->findAll();
+        $data = [];
+ 
+        foreach ($categories as $category) {
+            $data[] = [
+                'id' => $category->getId(),
+                'label' => $category->getLabel(),
+            ];
+        }
+        return new JsonResponse($data, Response::HTTP_OK);
+    }
+
+    #[Route('/api/categories', name:"create_category", methods: ['POST'])]
+    public function create(Request $request, PersistenceManagerRegistry $doctrine, SerializerInterface $serializer): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(), true);
+
+        $category = new Category();
+        $category->setLabel($requestData['label']);
+
+        $entityManager = $doctrine->getManager();
+        $entityManager->persist($category);
+        $entityManager->flush();
+
+        $jsonCategory = $serializer->serialize($category, 'json');
+        return new JsonResponse($jsonCategory, Response::HTTP_CREATED, [], true);
+    }
+
+
+    #[Route('api/categories/{id}', name:"get_category", methods:["GET"])]
+    public function show(int $id, SerializerInterface $serializer, CategoryRepository $categoryRepository): JsonResponse 
     {
         $category = $categoryRepository->find($id);
 
@@ -36,8 +68,8 @@ class CategoryController extends AbstractController
     }
 
 
-    #[Route('/api/categories/{id}', name:"updateCategory", methods:['PUT'])]
-    public function updateCategory(Request $request, SerializerInterface $serializer, Category $currentCategory, EntityManagerInterface $em): JsonResponse 
+    #[Route('/api/categories/{id}', name:"update_category", methods:['PUT'])]
+    public function update(Request $request, SerializerInterface $serializer, Category $currentCategory, EntityManagerInterface $em): JsonResponse 
     {
         $updatedCategory = $serializer->deserialize($request->getContent(), 
             Category::class, 
@@ -53,44 +85,12 @@ class CategoryController extends AbstractController
    }
 
 
-   #[Route('/api/categories/{id}', name: 'deleteCategory', methods: ['DELETE'])]
-   public function deleteCategory(Category $category, EntityManagerInterface $em): JsonResponse 
+   #[Route('/api/categories/{id}', name: 'delete_category', methods: ['DELETE'])]
+   public function delete(Category $category, EntityManagerInterface $em): JsonResponse 
    {
        $em->remove($category);
        $em->flush();
 
        return new JsonResponse("Category deleted", Response::HTTP_OK);
    }
-
-   #[Route('/api/categories', name:"getCategories", methods: ['GET'])]
-   public function listCategories(): JsonResponse
-   {
-       $categories = $this->categoryRepository->findAll();
-       $data = [];
-
-       foreach ($categories as $category) {
-           $data[] = [
-               'id' => $category->getId(),
-               'label' => $category->getLabel(),
-           ];
-       }
-       return new JsonResponse($data, Response::HTTP_OK);
-   }
-
-
-    #[Route('/api/categories', name:"createCategory", methods: ['POST'])]
-    public function create(Request $request, PersistenceManagerRegistry $doctrine, SerializerInterface $serializer): JsonResponse
-    {
-        $requestData = json_decode($request->getContent(), true);
-
-        $category = new Category();
-        $category->setLabel($requestData['label']);
-
-        $entityManager = $doctrine->getManager();
-        $entityManager->persist($category);
-        $entityManager->flush();
-
-        $jsonCategory = $serializer->serialize($category, 'json');
-        return new JsonResponse($jsonCategory, Response::HTTP_CREATED, [], true);
-    }
 }

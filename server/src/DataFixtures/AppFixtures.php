@@ -115,6 +115,7 @@ class AppFixtures extends Fixture
                 ->setModel("Iphone SE 2020")
                 ->setSerialCode("455D4700TT")
                 ->setPurchaseDate(new \DateTime('2021/11/23'))
+                ->setIsActive(1)
                 ->setCategory($this->getReference('category-'. 6))
                 ->setUser($this->getReference('user-' . 1));
         
@@ -129,7 +130,6 @@ class AppFixtures extends Fixture
         $warranty->setReference("Iphone 13")
                 ->setStartDate(new \DateTime('2022/04/06'))
                 ->setEndDate(new \DateTime('2022/04/06'))
-                ->setIsActive(1)
                 ->setEquipment($this->getReference('equipment-' . 1));
         
         $manager->persist($warranty);

@@ -12,7 +12,8 @@ use ApiPlatform\Metadata\ApiResource;
 
 #[ORM\Entity(repositoryClass: EquipmentRepository::class)]
 class Equipment
-{    /**
+{    
+    /**
     * @Groups({"equipment"})
     */
     #[ORM\Id]
@@ -44,6 +45,11 @@ class Equipment
      */
     #[ORM\Column(length: 200)]
     private ?string $serial_code = null;
+    /**
+    * @Groups({"equipment"})
+    */
+    #[ORM\Column(type: 'boolean')]
+    private ?bool $is_active = true;
 
     /**
      * @Groups({"equipment"})
@@ -51,15 +57,11 @@ class Equipment
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $purchase_date = null;
 
-    /**
-     * @Groups({"equipment"})
-     */
+
     #[ORM\ManyToOne(inversedBy: 'equipments')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Category $category = null;
-    /**
-     * @Groups({"equipment"})
-     */
+
     #[ORM\ManyToOne(inversedBy: 'equipment')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
@@ -145,6 +147,18 @@ class Equipment
     public function setPurchaseDate(?\DateTimeInterface $purchase_date): static
     {
         $this->purchase_date = $purchase_date;
+
+        return $this;
+    }
+
+    public function isIsActive(): ?bool
+    {
+        return $this->is_active;
+    }
+
+    public function setIsActive(bool $is_active): static
+    {
+        $this->is_active = $is_active;
 
         return $this;
     }

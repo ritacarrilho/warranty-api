@@ -26,13 +26,13 @@ class Category
     #[ORM\Column(length: 100)]
     private ?string $label = null;
 
-    #[ORM\OneToMany(mappedBy: 'category', targetEntity: Equipment::class, orphanRemoval: true)]
-    private Collection $equipments;
+    // #[ORM\OneToMany(mappedBy: 'category', targetEntity: Equipment::class, orphanRemoval: true)]
+    // private Collection $equipments;
 
-    public function __construct()
-    {
-        $this->equipments = new ArrayCollection();
-    }
+    // public function __construct()
+    // {
+    //     $this->equipments = new ArrayCollection();
+    // }
 
     public function getId(): ?int
     {
@@ -51,33 +51,33 @@ class Category
         return $this;
     }
 
-    /**
-     * @return Collection<int, Equipment>
-     */
-    public function getEquipments(): Collection
-    {
-        return $this->equipments;
-    }
+    // /**
+    //  * @return Collection<int, Equipment>
+    //  */
+    // public function getEquipments(): Collection
+    // {
+    //     return $this->equipments;
+    // }
 
-    public function addEquipment(Equipment $equipment): static
-    {
-        if (!$this->equipments->contains($equipment)) {
-            $this->equipments->add($equipment);
-            $equipment->setCategory($this);
-        }
+    // public function addEquipment(Equipment $equipment): static
+    // {
+    //     if (!$this->equipments->contains($equipment)) {
+    //         $this->equipments->add($equipment);
+    //         $equipment->setCategory($this);
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
-    public function removeEquipment(Equipment $equipment): static
-    {
-        if ($this->equipments->removeElement($equipment)) {
-            // set the owning side to null (unless already changed)
-            if ($equipment->getCategory() === $this) {
-                $equipment->setCategory(null);
-            }
-        }
+    // public function removeEquipment(Equipment $equipment): static
+    // {
+    //     if ($this->equipments->removeElement($equipment)) {
+    //         // set the owning side to null (unless already changed)
+    //         if ($equipment->getCategory() === $this) {
+    //             $equipment->setCategory(null);
+    //         }
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 }
