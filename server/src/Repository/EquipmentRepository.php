@@ -21,6 +21,16 @@ class EquipmentRepository extends ServiceEntityRepository
         parent::__construct($registry, Equipment::class);
     }
 
+    public function findEquipmentById(int $equipmentId, int $userId): ?Equipment
+    {
+        return $this->createQueryBuilder('e')
+            ->andWhere('e.id = :equipmentId')
+            ->andWhere('e.user = :userId')
+            ->setParameter('equipmentId', $equipmentId)
+            ->setParameter('userId', $userId)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 //    /**
 //     * @return Equipment[] Returns an array of Equipment objects
 //     */

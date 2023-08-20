@@ -7,43 +7,64 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Metadata\ApiResource;
 
 #[ORM\Entity(repositoryClass: EquipmentRepository::class)]
 class Equipment
-{
+{    /**
+    * @Groups({"equipment"})
+    */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
-
+    /**
+     * @Groups({"equipment"})
+     */
     #[ORM\Column(length: 150)]
     private ?string $name = null;
-
+    /**
+     * @Groups({"equipment"})
+     */
     #[ORM\Column(length: 150)]
     private ?string $brand = null;
-
+    /**
+     * @Groups({"equipment"})
+     */
     #[ORM\Column(length: 150, nullable: true)]
     private ?string $model = null;
-
+    /**
+     * @Groups({"equipment"})
+     */
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $picture = null;
-
+    /**
+     * @Groups({"equipment"})
+     */
     #[ORM\Column(length: 200)]
     private ?string $serial_code = null;
 
+    /**
+     * @Groups({"equipment"})
+     */
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $purchase_date = null;
 
+    /**
+     * @Groups({"equipment"})
+     */
     #[ORM\ManyToOne(inversedBy: 'equipments')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Category $category_id = null;
-
+    private ?Category $category = null;
+    /**
+     * @Groups({"equipment"})
+     */
     #[ORM\ManyToOne(inversedBy: 'equipment')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Consumer $user_id = null;
+    private ?User $user = null;
 
-    #[ORM\OneToMany(mappedBy: 'equipment_id', targetEntity: Warranty::class)]
+    #[ORM\OneToMany(mappedBy: 'equipment', targetEntity: Warranty::class)]
     private Collection $warranties;
 
     public function __construct()
@@ -128,26 +149,26 @@ class Equipment
         return $this;
     }
 
-    public function getCategoryId(): ?Category
+    public function getCategory(): ?Category
     {
-        return $this->category_id;
+        return $this->category;
     }
 
-    public function setCategoryId(?Category $category_id): static
+    public function setCategory(?Category $category): static
     {
-        $this->category_id = $category_id;
+        $this->category = $category;
 
         return $this;
     }
 
-    public function getUserId(): ?Consumer
+    public function getUser(): ?User
     {
-        return $this->user_id;
+        return $this->user;
     }
 
-    public function setUserId(?Consumer $user_id): static
+    public function setUser(?User $user): static
     {
-        $this->user_id = $user_id;
+        $this->user = $user;
 
         return $this;
     }
@@ -164,7 +185,7 @@ class Equipment
     {
         if (!$this->warranties->contains($warranty)) {
             $this->warranties->add($warranty);
-            $warranty->setEquipmentId($this);
+            $warranty->setEquipment($this);
         }
 
         return $this;
@@ -174,8 +195,8 @@ class Equipment
     {
         if ($this->warranties->removeElement($warranty)) {
             // set the owning side to null (unless already changed)
-            if ($warranty->getEquipmentId() === $this) {
-                $warranty->setEquipmentId(null);
+            if ($warranty->getEquipment() === $this) {
+                $warranty->setEquipment(null);
             }
         }
 

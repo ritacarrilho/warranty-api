@@ -11,9 +11,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Doctrine\Persistence\ManagerRegistry as PersistenceManagerRegistry;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use  Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 
 class CategoryController extends AbstractController
 {
@@ -28,6 +27,7 @@ class CategoryController extends AbstractController
     public function showCategory(int $id, SerializerInterface $serializer, CategoryRepository $categoryRepository): JsonResponse 
     {
         $category = $categoryRepository->find($id);
+
         if ($category) {
             $jsonCategory = $serializer->serialize($category, 'json');
             return new JsonResponse($jsonCategory, Response::HTTP_OK, [], true);
@@ -79,15 +79,18 @@ class CategoryController extends AbstractController
 
 
     #[Route('/api/categories', name:"createCategory", methods: ['POST'])]
-    public function createCategory(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator): JsonResponse 
+    public function create(Request $request, PersistenceManagerRegistry $doctrine, SerializerInterface $serializer): JsonResponse
     {
-        $category = $serializer->deserialize($request->getContent(), Category::class, 'json');
-        $em->persist($category);
-        $em->flush();
+        $requestData = json_decode($request->getContent(), true);
 
-        $jsonCatgory = $serializer->serialize($category, 'json');
-        // $location = $urlGenerator->generate('createCategory', ['id' => $category->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+        $category = new Category();
+        $category->setLabel($requestData['label']);
 
-        return new JsonResponse($jsonCatgory, Response::HTTP_OK, [], true);
-   }
+        $entityManager = $doctrine->getManager();
+        $entityManager->persist($category);
+        $entityManager->flush();
+
+        $jsonCategory = $serializer->serialize($category, 'json');
+        return new JsonResponse($jsonCategory, Response::HTTP_CREATED, [], true);
+    }
 }

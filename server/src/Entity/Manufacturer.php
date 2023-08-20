@@ -37,7 +37,7 @@ class Manufacturer
     #[ORM\Column(length: 150, nullable: true)]
     private ?string $country = null;
 
-    #[ORM\OneToMany(mappedBy: 'manufacturer_id', targetEntity: Warranty::class)]
+    #[ORM\OneToMany(mappedBy: 'manufacturer', targetEntity: Warranty::class)]
     private Collection $warranties;
 
     public function __construct()
@@ -146,7 +146,7 @@ class Manufacturer
     {
         if (!$this->warranties->contains($warranty)) {
             $this->warranties->add($warranty);
-            $warranty->setManufacturerId($this);
+            $warranty->setManufacturer($this);
         }
 
         return $this;
@@ -156,8 +156,8 @@ class Manufacturer
     {
         if ($this->warranties->removeElement($warranty)) {
             // set the owning side to null (unless already changed)
-            if ($warranty->getManufacturerId() === $this) {
-                $warranty->setManufacturerId(null);
+            if ($warranty->getManufacturer() === $this) {
+                $warranty->setManufacturer(null);
             }
         }
 

@@ -15,15 +15,30 @@ class Document
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
+    private ?string $name = null;
+
+    #[ORM\Column(length: 200)]
     private ?string $path = null;
 
     #[ORM\ManyToOne(inversedBy: 'documents')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Warranty $warranty_id = null;
+    private ?Warranty $warranty = null;
 
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): static
+    {
+        $this->name = $name;
+
+        return $this;
     }
 
     public function getPath(): ?string
@@ -38,14 +53,14 @@ class Document
         return $this;
     }
 
-    public function getWarrantyId(): ?Warranty
+    public function getWarranty(): ?Warranty
     {
-        return $this->warranty_id;
+        return $this->warranty;
     }
 
-    public function setWarrantyId(?Warranty $warranty_id): static
+    public function setWarranty(?Warranty $warranty): static
     {
-        $this->warranty_id = $warranty_id;
+        $this->warranty = $warranty;
 
         return $this;
     }

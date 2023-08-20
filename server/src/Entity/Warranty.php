@@ -31,12 +31,12 @@ class Warranty
 
     #[ORM\ManyToOne(inversedBy: 'warranties')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Equipment $equipment_id = null;
+    private ?Equipment $equipment = null;
 
     #[ORM\ManyToOne(inversedBy: 'warranties')]
-    private ?Manufacturer $manufacturer_id = null;
+    private ?Manufacturer $manufacturer = null;
 
-    #[ORM\OneToMany(mappedBy: 'warranty_id', targetEntity: Document::class)]
+    #[ORM\OneToMany(mappedBy: 'warranty', targetEntity: Document::class)]
     private Collection $documents;
 
     public function __construct()
@@ -97,26 +97,26 @@ class Warranty
         return $this;
     }
 
-    public function getEquipmentId(): ?Equipment
+    public function getEquipment(): ?Equipment
     {
-        return $this->equipment_id;
+        return $this->equipment;
     }
 
-    public function setEquipmentId(?Equipment $equipment_id): static
+    public function setEquipment(?Equipment $equipment): static
     {
-        $this->equipment_id = $equipment_id;
+        $this->equipment = $equipment;
 
         return $this;
     }
 
-    public function getManufacturerId(): ?Manufacturer
+    public function getManufacturer(): ?Manufacturer
     {
-        return $this->manufacturer_id;
+        return $this->manufacturer;
     }
 
-    public function setManufacturerId(?Manufacturer $manufacturer_id): static
+    public function setManufacturer(?Manufacturer $manufacturer): static
     {
-        $this->manufacturer_id = $manufacturer_id;
+        $this->manufacturer = $manufacturer;
 
         return $this;
     }
@@ -133,7 +133,7 @@ class Warranty
     {
         if (!$this->documents->contains($document)) {
             $this->documents->add($document);
-            $document->setWarrantyId($this);
+            $document->setWarranty($this);
         }
 
         return $this;
@@ -143,8 +143,8 @@ class Warranty
     {
         if ($this->documents->removeElement($document)) {
             // set the owning side to null (unless already changed)
-            if ($document->getWarrantyId() === $this) {
-                $document->setWarrantyId(null);
+            if ($document->getWarranty() === $this) {
+                $document->setWarranty(null);
             }
         }
 
