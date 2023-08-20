@@ -56,9 +56,9 @@ class CategoryController extends AbstractController
 
 
     #[Route('api/categories/{id}', name:"get_category", methods:["GET"])]
-    public function show(int $id, SerializerInterface $serializer, CategoryRepository $categoryRepository): JsonResponse 
+    public function show(int $id, SerializerInterface $serializer): JsonResponse 
     {
-        $category = $categoryRepository->find($id);
+        $category = $this->categoryRepository->find($id);
 
         if ($category) {
             $jsonCategory = $serializer->serialize($category, 'json');

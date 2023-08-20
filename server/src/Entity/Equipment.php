@@ -14,7 +14,7 @@ use ApiPlatform\Metadata\ApiResource;
 class Equipment
 {    
     /**
-    * @Groups({"equipment"})
+    * @Groups({"equipment", "warranty_with_details"})
     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -66,12 +66,12 @@ class Equipment
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
-    #[ORM\OneToMany(mappedBy: 'equipment', targetEntity: Warranty::class)]
-    private Collection $warranties;
+    // #[ORM\OneToMany(mappedBy: 'equipment', targetEntity: Warranty::class)]
+    // private Collection $warranties;
 
     public function __construct()
     {
-        $this->warranties = new ArrayCollection();
+        // $this->warranties = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -187,33 +187,33 @@ class Equipment
         return $this;
     }
 
-    /**
-     * @return Collection<int, Warranty>
-     */
-    public function getWarranties(): Collection
-    {
-        return $this->warranties;
-    }
+    // /**
+    //  * @return Collection<int, Warranty>
+    //  */
+    // public function getWarranties(): Collection
+    // {
+    //     return $this->warranties;
+    // }
 
-    public function addWarranty(Warranty $warranty): static
-    {
-        if (!$this->warranties->contains($warranty)) {
-            $this->warranties->add($warranty);
-            $warranty->setEquipment($this);
-        }
+    // public function addWarranty(Warranty $warranty): static
+    // {
+    //     if (!$this->warranties->contains($warranty)) {
+    //         $this->warranties->add($warranty);
+    //         $warranty->setEquipment($this);
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
-    public function removeWarranty(Warranty $warranty): static
-    {
-        if ($this->warranties->removeElement($warranty)) {
-            // set the owning side to null (unless already changed)
-            if ($warranty->getEquipment() === $this) {
-                $warranty->setEquipment(null);
-            }
-        }
+    // public function removeWarranty(Warranty $warranty): static
+    // {
+    //     if ($this->warranties->removeElement($warranty)) {
+    //         // set the owning side to null (unless already changed)
+    //         if ($warranty->getEquipment() === $this) {
+    //             $warranty->setEquipment(null);
+    //         }
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 }

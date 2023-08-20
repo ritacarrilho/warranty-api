@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Warranty;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * @extends ServiceEntityRepository<Warranty>
@@ -19,6 +20,24 @@ class WarrantyRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Warranty::class);
+    }
+
+    public function getWarrantiesForEquipmentAndUser(int $equipmentId, int $userId, EntityManagerInterface $entityManager): array
+    {
+        $queryBuilder = $entityManager->createQueryBuilder();
+        
+        $query = $queryBuilder
+            ->select('w')
+            ->from(Warranty::class, 'w')
+            ->join('w.equipment', 'e')
+            ->join('e.user', 'u')
+            ->where('e.id = :equipmentId')
+            ->andWhere('u.id = :userId')
+            ->setParameter('equipmentId', $equipmentId)
+            ->setParameter('userId', $userId)
+            ->getQuery();
+        
+        return $query->getResult();
     }
 
     public function findOneByEquipment($value): ?Warranty

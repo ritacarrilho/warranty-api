@@ -103,13 +103,13 @@ class EquipmentController extends AbstractController
 
 
     #[Route('api/equipments/{id}', name:"getEquipment", methods:["GET"])]
-    public function show(int $id, SerializerInterface $serializer, EquipmentRepository $equipmentRepository, Request $request): JsonResponse 
+    public function show(int $id, SerializerInterface $serializer, Request $request): JsonResponse 
     {
         $authToken = $request->headers->get('Authorization');
         $userId = $this->jwtMiddleware->getUserId();
 
         if($authToken && $userId) {
-            $equipment = $equipmentRepository->findEquipmentById($id, $userId);
+            $equipment = $this->equipmentRepository->findEquipmentById($id, $userId);
 
             if ($equipment) {
                 $jsonEquipment = $serializer->serialize($equipment, 'json', ['groups' => 'equipment']);

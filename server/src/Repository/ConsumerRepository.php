@@ -21,6 +21,14 @@ class ConsumerRepository extends ServiceEntityRepository
         parent::__construct($registry, Consumer::class);
     }
 
+    public function findByUser($user): ?Consumer
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('c.user = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 //    /**
 //     * @return Consumer[] Returns an array of Consumer objects
 //     */

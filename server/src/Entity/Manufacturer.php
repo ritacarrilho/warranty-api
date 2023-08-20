@@ -6,34 +6,52 @@ use App\Repository\ManufacturerRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Metadata\ApiResource;
 
 #[ORM\Entity(repositoryClass: ManufacturerRepository::class)]
 class Manufacturer
 {
+     /**
+    * @Groups({"warranty_with_details"})
+    */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
-
+     /**
+    * @Groups({"warranty_with_details"})
+    */
     #[ORM\Column(length: 150)]
     private ?string $name = null;
-
+     /**
+    * @Groups({"warranty_with_details"})
+    */
     #[ORM\Column(length: 150)]
     private ?string $email = null;
-
+     /**
+    * @Groups({"warranty_with_details"})
+    */
     #[ORM\Column(length: 80, nullable: true)]
     private ?string $phone = null;
-
+     /**
+    * @Groups({"warranty_with_details"})
+    */
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $address = null;
-
+     /**
+    * @Groups({"warranty_with_details"})
+    */
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $zip_code = null;
-
+     /**
+    * @Groups({"warranty_with_details"})
+    */
     #[ORM\Column(length: 200, nullable: true)]
     private ?string $city = null;
-
+     /**
+    * @Groups({"warranty_with_details"})
+    */
     #[ORM\Column(length: 150, nullable: true)]
     private ?string $country = null;
 

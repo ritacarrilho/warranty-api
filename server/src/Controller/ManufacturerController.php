@@ -70,10 +70,10 @@ class ManufacturerController extends AbstractController
 
 
     #[Route('api/manufacturers/{id}', name:"get_manufacturer", methods:["GET"])]
-    public function show(int $id, SerializerInterface $serializer, ManufacturerRepository $manufacturerRepository): JsonResponse 
+    public function show(int $id, SerializerInterface $serializer): JsonResponse 
     {
         try {
-            $manufacturer = $manufacturerRepository->find($id);
+            $manufacturer = $this->manufacturerRepository->find($id);
 
             if ($manufacturer) {
                 $jsonManufacturer = $serializer->serialize($manufacturer, 'json');

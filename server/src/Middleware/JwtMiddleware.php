@@ -33,4 +33,19 @@ class JwtMiddleware
 
         return $user->getId();
     }
+
+    public function getUserRole(): ?int
+    {
+        $decodedJwtToken = $this->jwtManager->decode($this->tokenStorage->getToken());
+
+        $email = $decodedJwtToken['email'];
+
+        $user = $this->userRepository->findByEmail($email);
+
+        if (!$user) {
+            return null;
+        }
+
+        return $user->getRoles();
+    }
 }
