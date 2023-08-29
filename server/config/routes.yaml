@@ -9,5 +9,5 @@ kernel:
     type: annotation
 
 api_login_check:
-    path: /api/auth
+    path: /auth
     methods: ['POST']

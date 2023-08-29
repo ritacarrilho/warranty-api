@@ -3,25 +3,35 @@
 namespace App\Entity;
 
 use App\Repository\ConsumerRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use ApiPlatform\Metadata\ApiResource;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ConsumerRepository::class)]
 class Consumer
 {
+    /**
+     * @Groups({"consumer_response"})
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
+    /**
+     * @Groups({"consumer_response"})
+     */
     #[ORM\Column(length: 150)]
     private ?string $first_name = null;
 
+    /**
+     * @Groups({"consumer_response"})
+     */
     #[ORM\Column(length: 150)]
     private ?string $last_name = null;
 
+    /**
+     * @Groups({"consumer_response"})
+     */
     #[ORM\Column(length: 80, nullable: true)]
     private ?string $phone = null;
 

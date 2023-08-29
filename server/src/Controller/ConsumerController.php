@@ -12,9 +12,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\ManagerRegistry as PersistenceManagerRegistry;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Doctrine\Persistence\ManagerRegistry;
 
 class ConsumerController extends AbstractController
 {
@@ -28,86 +27,122 @@ class ConsumerController extends AbstractController
     }
 
     #[Route('/api/consumers', name:"get_consumers", methods: ['GET'])]
-    public function list(Request $request): JsonResponse
+    public function list(Request $request, ConsumerRepository $consumerRepository): JsonResponse
     {
-        $authToken = $request->headers->get('Authorization');
-        $userId = $this->jwtMiddleware->getUserId();
-
-        if($authToken && $userId) {
-            $consumers = $this->consumerRepository->findAll();
+        try {
+            $authToken = $request->headers->get('Authorization');
+            $userId = $this->jwtMiddleware->getUserId();
+    
+            if (!$authToken || !$userId) {
+                throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
+            }
+    
+            $consumers = $consumerRepository->findAll();
             $data = [];
-
+    
             foreach ($consumers as $consumer) {
                 $user = [
                     'id' => $consumer->getUser()->getId(),
                     'email' => $consumer->getUser()->getEmail(),
                 ];
-
+    
                 $data[] = [
                     'id' => $consumer->getId(),
                     'first_name' => $consumer->getFirstName(),
                     'last_name' => $consumer->getLastName(),
                     'phone' => $consumer->getPhone(),
-                    'user' => $user
+                    'email' => $user["email"],
+                    'user_id' => $user["id"],
+                    // 'user' => $user
                 ];
             }
+    
             return new JsonResponse($data, Response::HTTP_OK);
+        } catch (HttpException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], $e->getStatusCode());
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => 'An error occurred'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        return new JsonResponse("Wrong request", Response::HTTP_NOT_FOUND);
     }
 
 
-    #[Route('/api/consumer', name:"get_consumer", methods:["GET"])]
-    public function show(SerializerInterface $serializer, Request $request): JsonResponse {
-        $authToken = $request->headers->get('Authorization');
-        $userId = $this->jwtMiddleware->getUserId();
+    #[Route('/api/consumer', name: 'get_consumer', methods: ['GET'])]
+    public function show(SerializerInterface $serializer, ConsumerRepository $consumerRepository, Request $request): JsonResponse
+    {
+        try {
+            $authToken = $request->headers->get('Authorization');
+            $userId = $this->jwtMiddleware->getUserId();
 
-        if ($authToken && $userId) {
-            $consumer = $this->consumerRepository->findByUser($userId);
-
-            if ($consumer) {
-                $consumerObj = [
-                    'id' => $consumer->getId(),
-                    'first_name' => $consumer->getFirstName(),
-                    'last_name' => $consumer->getLastName(),
-                    'phone' => $consumer->getPhone(),
-                    'user' => [
-                        'id' => $consumer->getUser()->getId(),
-                        'email' => $consumer->getUser()->getEmail(),
-                        // Include other user properties you need
-                    ]
-                ];
-
-                $jsonConsumer = $serializer->serialize($consumerObj, 'json');
-                return new JsonResponse($jsonConsumer, Response::HTTP_OK, [], true);
+            if (!$authToken || !$userId) {
+                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
-            return new JsonResponse("Consumer not found", Response::HTTP_NOT_FOUND);
-        }
+            $consumer = $consumerRepository->findByUser($userId);
 
-        return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
+            if (!$consumer) {
+                throw new HttpException("Consumer not found", Response::HTTP_NOT_FOUND);
+            }
+
+            $consumerObj = [
+                'id' => $consumer->getId(),
+                'first_name' => $consumer->getFirstName(),
+                'last_name' => $consumer->getLastName(),
+                'phone' => $consumer->getPhone(),
+                'email' => $consumer->getUser()->getEmail(),
+                'user_id' => $consumer->getUser()->getId(),
+                // 'user' => [
+                //     'id' => $consumer->getUser()->getId(),
+                //     'email' => $consumer->getUser()->getEmail(),
+                // ]
+            ];
+
+            $jsonConsumer = $serializer->serialize($consumerObj, 'json');
+            return new JsonResponse($jsonConsumer, Response::HTTP_OK, [], true);
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
+        }
     }
 
-    #[Route('/api/consumer', name:"update_consumer", methods:['PUT'])]
-    public function update(Request $request, SerializerInterface $serializer, EntityManagerInterface $em): JsonResponse 
+
+    #[Route('/api/consumer', name: 'update_consumer', methods: ['PUT'])]
+    public function update(Request $request, SerializerInterface $serializer, EntityManagerInterface $em): JsonResponse
     {
-        $authToken = $request->headers->get('Authorization');
-        $userId = $this->jwtMiddleware->getUserId();
-
-        if ($authToken && $userId) {
+        try {
+            $authToken = $request->headers->get('Authorization');
+            $userId = $this->jwtMiddleware->getUserId();
+    
+            if (!$authToken || !$userId) {
+                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+            }
+    
             $consumer = $this->consumerRepository->findByUser($userId);
-
-            $updatedEquipment = $serializer->deserialize($request->getContent(), 
-                Consumer::class, 
-                'json', 
+    
+            if (!$consumer) {
+                throw new HttpException("Consumer not found", Response::HTTP_NOT_FOUND);
+            }
+    
+            $updatedConsumer = $serializer->deserialize(
+                $request->getContent(),
+                Consumer::class,
+                'json',
                 [AbstractNormalizer::OBJECT_TO_POPULATE => $consumer]
             );
-            
-            $em->persist($updatedEquipment);
+    
+            $em->persist($updatedConsumer);
             $em->flush();
 
-            return new JsonResponse("Consumer details successfully modified", Response::HTTP_OK, [], true);
+            $jsonUpdatedConsumer = $serializer->serialize($updatedConsumer, 'json', [
+                'groups' => ['consumer_response']
+            ]);
+    
+            $responseData = [
+                'message' => 'Consumer details successfully modified',
+                'data' => json_decode($jsonUpdatedConsumer, true)
+            ];
+    
+            return new JsonResponse($responseData, Response::HTTP_OK);
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
-        return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
     }
 }

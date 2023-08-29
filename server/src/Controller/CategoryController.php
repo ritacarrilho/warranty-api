@@ -12,6 +12,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry as PersistenceManagerRegistry;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 class CategoryController extends AbstractController
@@ -26,71 +27,102 @@ class CategoryController extends AbstractController
     #[Route('/api/categories', name:"get_categories", methods: ['GET'])]
     public function list(): JsonResponse
     {
-        $categories = $this->categoryRepository->findAll();
-        $data = [];
- 
-        foreach ($categories as $category) {
-            $data[] = [
-                'id' => $category->getId(),
-                'label' => $category->getLabel(),
-            ];
+        try{
+            $categories = $this->categoryRepository->findAll();
+            $data = [];
+    
+            foreach ($categories as $category) {
+                $data[] = [
+                    'id' => $category->getId(),
+                    'label' => $category->getLabel(),
+                ];
+            }
+            return new JsonResponse($data, Response::HTTP_OK);
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
-        return new JsonResponse($data, Response::HTTP_OK);
     }
 
-    #[Route('/api/categories', name:"create_category", methods: ['POST'])]
+    #[Route('/api/category', name:"create_category", methods: ['POST'])]
     public function create(Request $request, PersistenceManagerRegistry $doctrine, SerializerInterface $serializer): JsonResponse
     {
-        $requestData = json_decode($request->getContent(), true);
+        try {
+            $requestData = json_decode($request->getContent(), true);
 
-        $category = new Category();
-        $category->setLabel($requestData['label']);
-
-        $entityManager = $doctrine->getManager();
-        $entityManager->persist($category);
-        $entityManager->flush();
-
-        $jsonCategory = $serializer->serialize($category, 'json');
-        return new JsonResponse($jsonCategory, Response::HTTP_CREATED, [], true);
+            $category = new Category();
+            $category->setLabel($requestData['label']);
+    
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($category);
+            $entityManager->flush();
+    
+            $jsonCategory = $serializer->serialize($category, 'json');
+            $responseData = [
+                'message' => 'Category created with success',
+                'data' => json_decode($jsonCategory, true)
+            ];
+    
+            return new JsonResponse($responseData, Response::HTTP_CREATED);
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
+        }
     }
 
 
-    #[Route('api/categories/{id}', name:"get_category", methods:["GET"])]
+    #[Route('api/category/{id}', name:"get_category", methods:["GET"])]
     public function show(int $id, SerializerInterface $serializer): JsonResponse 
     {
-        $category = $this->categoryRepository->find($id);
-
-        if ($category) {
-            $jsonCategory = $serializer->serialize($category, 'json');
-            return new JsonResponse($jsonCategory, Response::HTTP_OK, [], true);
+        try {
+            $category = $this->categoryRepository->find($id);
+    
+            if ($category) {
+                $jsonCategory = $serializer->serialize($category, 'json');
+                return new JsonResponse($jsonCategory, Response::HTTP_OK, [], true);
+            }
+    
+            return new JsonResponse("Category not found", Response::HTTP_NOT_FOUND);
+        } catch (\Exception $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
     }
 
 
-    #[Route('/api/categories/{id}', name:"update_category", methods:['PUT'])]
+    #[Route('/api/category/{id}', name:"update_category", methods:['PUT'])]
     public function update(Request $request, SerializerInterface $serializer, Category $currentCategory, EntityManagerInterface $em): JsonResponse 
     {
-        $updatedCategory = $serializer->deserialize($request->getContent(), 
-            Category::class, 
-            'json', 
-            [AbstractNormalizer::OBJECT_TO_POPULATE => $currentCategory]
-        );
-        
-        $em->persist($updatedCategory);
-        $em->flush();
+        try {
+            $updatedCategory = $serializer->deserialize($request->getContent(), 
+                Category::class, 
+                'json', 
+                [AbstractNormalizer::OBJECT_TO_POPULATE => $currentCategory]
+            );
+    
+            $em->persist($updatedCategory);
+            $em->flush();
+    
+            $jsonCategory = $serializer->serialize($updatedCategory, 'json');
+            $responseData = [
+                'message' => 'Category modified with success',
+                'data' => json_decode($jsonCategory, true)
+            ];
+    
+            return new JsonResponse($responseData, Response::HTTP_OK);
+        } catch (\Exception $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 
-        $jsonCategory = $serializer->serialize($updatedCategory, 'json');
-        return new JsonResponse($jsonCategory, Response::HTTP_OK, [], true);
-   }
 
-
-   #[Route('/api/categories/{id}', name: 'delete_category', methods: ['DELETE'])]
-   public function delete(Category $category, EntityManagerInterface $em): JsonResponse 
-   {
-       $em->remove($category);
-       $em->flush();
-
-       return new JsonResponse("Category deleted", Response::HTTP_OK);
-   }
+    #[Route('/api/category/{id}', name: 'delete_category', methods: ['DELETE'])]
+    public function delete(Category $category, EntityManagerInterface $em): JsonResponse 
+    {
+        try {
+            $em->remove($category);
+            $em->flush();
+    
+            return new JsonResponse("Category deleted", Response::HTTP_OK);
+        } catch (\Exception $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

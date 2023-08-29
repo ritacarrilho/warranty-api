@@ -9,6 +9,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class HistoricController extends AbstractController
 {
@@ -21,24 +23,28 @@ class HistoricController extends AbstractController
         $this->equipmentRepository = $equipmentRepository;
     }
 
-    #[Route('/api/historic', name:"get_historic", methods: ['GET'])]
+    #[Route('/api/historic', name: "get_historic", methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        $authToken = $request->headers->get('Authorization');
-        $userId = $this->jwtMiddleware->getUserId();
-
-        if($authToken && $userId) {
+        try {
+            $authToken = $request->headers->get('Authorization');
+            $userId = $this->jwtMiddleware->getUserId();
+    
+            if (!$authToken || !$userId) {
+                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+            }
+    
             $equipments = $this->equipmentRepository->findByHistoric($userId);
             $data = [];
-
+    
             foreach ($equipments as $equipment) {
                 $purchaseDate = $equipment->getPurchaseDate(); // format date
-
+    
                 $category = [
                     'id' => $equipment->getCategory()->getId(),
                     'label' => $equipment->getCategory()->getLabel(),
                 ];
-
+    
                 $data[] = [
                     'id' => $equipment->getId(),
                     'name' => $equipment->getName(),
@@ -48,11 +54,49 @@ class HistoricController extends AbstractController
                     'serial_code' => $equipment->getSerialCode(),
                     'purchase_date' => $purchaseDate->format('Y-m-d'),
                     'is_active' => $equipment->isIsActive(),
-                    'category' => $category
+                    'category_id' => $category['id'],
+                    // 'category' => $category
                 ];
             }
+    
             return new JsonResponse($data, Response::HTTP_OK);
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
-        return new JsonResponse("Wrong request", Response::HTTP_NOT_FOUND);
+    }
+
+
+    #[Route('/api/historic/equipment/{id}', name: "add_to_historic", methods: ['PUT'])]
+    public function update(int $id, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        try {
+            $authToken = $request->headers->get('Authorization');
+            $userId = $this->jwtMiddleware->getUserId();
+    
+            if (!$authToken || !$userId) {
+                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+            }
+    
+            $equipment = $this->equipmentRepository->find($id);
+    
+            if (!$equipment) {
+                throw new HttpException("Equipment not found", Response::HTTP_NOT_FOUND);
+            }
+    
+            $requestData = json_decode($request->getContent(), true);
+            
+            $equipment->setName($requestData['name'])
+                ->setBrand($requestData['brand'])
+                ->setModel($requestData['model'])
+                ->setSerialCode($requestData['serial_code'])
+                ->setPurchaseDate(new \DateTime($requestData['purchase_date']))
+                ->setIsActive('false');
+            
+            $em->flush();
+    
+            return new JsonResponse("Equipment successfully added to historic", Response::HTTP_OK);
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
+        }
     }
 }

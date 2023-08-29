@@ -8,13 +8,12 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
-use ApiPlatform\Metadata\ApiResource;
 
 #[ORM\Entity(repositoryClass: EquipmentRepository::class)]
 class Equipment
 {    
     /**
-    * @Groups({"equipment", "warranty_with_details"})
+    * @Groups({"equipment"})
     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -35,11 +34,6 @@ class Equipment
      */
     #[ORM\Column(length: 150, nullable: true)]
     private ?string $model = null;
-    /**
-     * @Groups({"equipment"})
-     */
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $picture = null;
     /**
      * @Groups({"equipment"})
      */
@@ -111,18 +105,6 @@ class Equipment
     public function setModel(?string $model): static
     {
         $this->model = $model;
-
-        return $this;
-    }
-
-    public function getPicture(): ?string
-    {
-        return $this->picture;
-    }
-
-    public function setPicture(?string $picture): static
-    {
-        $this->picture = $picture;
 
         return $this;
     }

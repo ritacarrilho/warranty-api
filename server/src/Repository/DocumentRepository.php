@@ -21,6 +21,16 @@ class DocumentRepository extends ServiceEntityRepository
         parent::__construct($registry, Document::class);
     }
 
+   public function findByWarranty($warranty_id): array
+   {
+       return $this->createQueryBuilder('d')
+           ->andWhere('d.warranty = :val')
+           ->setParameter('val', $warranty_id)
+           ->setMaxResults(10)
+           ->getQuery()
+           ->getResult();
+   }
+
 //    /**
 //     * @return Document[] Returns an array of Document objects
 //     */

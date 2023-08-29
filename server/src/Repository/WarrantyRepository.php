@@ -22,22 +22,17 @@ class WarrantyRepository extends ServiceEntityRepository
         parent::__construct($registry, Warranty::class);
     }
 
-    public function getWarrantiesForEquipmentAndUser(int $equipmentId, int $userId, EntityManagerInterface $entityManager): array
+    public function getWarrantiesForEquipmentAndUser(int $equipmentId, int $userId): array
     {
-        $queryBuilder = $entityManager->createQueryBuilder();
-        
-        $query = $queryBuilder
-            ->select('w')
-            ->from(Warranty::class, 'w')
+        return $this->createQueryBuilder('w')
             ->join('w.equipment', 'e')
             ->join('e.user', 'u')
             ->where('e.id = :equipmentId')
             ->andWhere('u.id = :userId')
             ->setParameter('equipmentId', $equipmentId)
             ->setParameter('userId', $userId)
-            ->getQuery();
-        
-        return $query->getResult();
+            ->getQuery()
+            ->getResult();
     }
 
     public function findOneByEquipment($value): ?Warranty
@@ -47,6 +42,18 @@ class WarrantyRepository extends ServiceEntityRepository
            ->setParameter('val', $value)
            ->getQuery()
            ->getOneOrNullResult();
+    }
+
+    public function findOneByUser($userId): array
+    {
+       return $this->createQueryBuilder('w')
+       ->join('w.equipment', 'e')
+       ->join('e.user', 'u')
+       ->where('e.id = w.equipment')
+       ->andWhere('u.id = :userId')
+       ->setParameter('userId', $userId)
+       ->getQuery()
+       ->getResult();
     }
 
 //    /**

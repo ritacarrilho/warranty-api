@@ -27,89 +27,117 @@ class ManufacturerController extends AbstractController
     #[Route('/api/manufacturers', name:"get_manufacturers", methods: ['GET'])]
     public function list(): JsonResponse
     {
-        $manufacturers = $this->manufacturerRepository->findAll();
-        $data = [];
- 
-        foreach ($manufacturers as $manufacturer) {
-            $data[] = [
-                'id' => $manufacturer->getId(),
-                'name' => $manufacturer->getName(),
-                'email' => $manufacturer->getEmail(),
-                'phone' => $manufacturer->getPhone(),
-                'address' => $manufacturer->getAddress(),
-                'zip_code' => $manufacturer->getZipCode(),
-                'city' => $manufacturer->getCity(),
-                'country' => $manufacturer->getCountry(),
-            ];
+        try {
+            $manufacturers = $this->manufacturerRepository->findAll();
+            $data = [];
+    
+            foreach ($manufacturers as $manufacturer) {
+                $data[] = [
+                    'id' => $manufacturer->getId(),
+                    'name' => $manufacturer->getName(),
+                    'email' => $manufacturer->getEmail(),
+                    'phone' => $manufacturer->getPhone(),
+                    'address' => $manufacturer->getAddress(),
+                    'zip_code' => $manufacturer->getZipCode(),
+                    'city' => $manufacturer->getCity(),
+                    'country' => $manufacturer->getCountry(),
+                ];
+            }
+    
+            return new JsonResponse($data, Response::HTTP_OK);
+        } catch (\Exception $exception) {
+            return new JsonResponse(['error' => 'An error occurred while fetching manufacturers.'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        return new JsonResponse($data, Response::HTTP_OK);
     }
 
 
-    #[Route('/api/manufacturers', name:"create_manufacturer", methods: ['POST'])]
+    #[Route('/api/manufacturer', name:"create_manufacturer", methods: ['POST'])]
     public function create(Request $request, PersistenceManagerRegistry $doctrine, SerializerInterface $serializer): JsonResponse
     {
-        $requestData = json_decode($request->getContent(), true);
-
-        $manufacturer = new Manufacturer();
-        $manufacturer->setName($requestData['name'])
+        try {
+            $requestData = json_decode($request->getContent(), true);
+    
+            if (!isset($requestData['name']) || empty($requestData['name']) ||
+                !isset($requestData['email']) || empty($requestData['email']) ||
+                !isset($requestData['phone']) || empty($requestData['phone']) ||
+                !isset($requestData['address']) || empty($requestData['address']) ||
+                !isset($requestData['zip_code']) || empty($requestData['zip_code']) ||
+                !isset($requestData['city']) || empty($requestData['city']) ||
+                !isset($requestData['country']) || empty($requestData['country'])
+            ) {
+                return new JsonResponse(['error' => 'Invalid data. All fields are required.'], Response::HTTP_BAD_REQUEST);
+            }
+    
+            $manufacturer = new Manufacturer();
+            $manufacturer->setName($requestData['name'])
                 ->setEmail($requestData['email'])
                 ->setPhone($requestData['phone'])
                 ->setAddress($requestData['address'])
                 ->setZipCode($requestData['zip_code'])
                 ->setCity($requestData['city'])
                 ->setCountry($requestData['country']);
-
-        $entityManager = $doctrine->getManager();
-        $entityManager->persist($manufacturer);
-        $entityManager->flush();
-
-        $jsonManufacturer = $serializer->serialize($manufacturer, 'json');
-        return new JsonResponse($jsonManufacturer, Response::HTTP_CREATED, [], true);
+    
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($manufacturer);
+            $entityManager->flush();
+    
+            $jsonManufacturer = $serializer->serialize($manufacturer, 'json');
+            return new JsonResponse($jsonManufacturer, Response::HTTP_CREATED, [], true);
+        } catch (\Exception $exception) {
+            return new JsonResponse(['error' => 'An error occurred while creating the manufacturer.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
 
-    #[Route('api/manufacturers/{id}', name:"get_manufacturer", methods:["GET"])]
+    #[Route('api/manufacturer/{id}', name:"get_manufacturer", methods:["GET"])]
     public function show(int $id, SerializerInterface $serializer): JsonResponse 
     {
         try {
             $manufacturer = $this->manufacturerRepository->find($id);
-
+    
             if ($manufacturer) {
                 $jsonManufacturer = $serializer->serialize($manufacturer, 'json');
-
                 return new JsonResponse($jsonManufacturer, Response::HTTP_OK, [], true);
             }
+    
+            return new JsonResponse(['error' => 'Manufacturer not found'], Response::HTTP_NOT_FOUND);
         } catch (\Exception $ex) {
-            throw new NotFoundHttpException();
-            return new JsonResponse(null, Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['error' => 'An error occurred while retrieving the manufacturer'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     
-    #[Route('/api/manufacturers/{id}', name:"update_manufacturer", methods:['PUT'])]
+    #[Route('/api/manufacturer/{id}', name:"update_manufacturer", methods:['PUT'])]
     public function update(Request $request, SerializerInterface $serializer, Manufacturer $currentManufacturer, EntityManagerInterface $em): JsonResponse 
     {
-        $updatedManufacturer = $serializer->deserialize($request->getContent(), 
-            Manufacturer::class, 
-            'json', 
-            [AbstractNormalizer::OBJECT_TO_POPULATE => $currentManufacturer]
-        );
-        
-        $em->persist($updatedManufacturer);
-        $em->flush();
+        try {
+            $updatedManufacturer = $serializer->deserialize($request->getContent(), 
+                Manufacturer::class, 
+                'json', 
+                [AbstractNormalizer::OBJECT_TO_POPULATE => $currentManufacturer]
+            );
+            
+            $em->persist($updatedManufacturer);
+            $em->flush();
+    
+            $jsonManufacturer = $serializer->serialize($updatedManufacturer, 'json');
+            return new JsonResponse($jsonManufacturer, Response::HTTP_OK, [], true);
+        } catch (\Exception $ex) {
+            return new JsonResponse(['error' => 'An error occurred while updating the manufacturer'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 
-        $jsonManufacturer = $serializer->serialize($updatedManufacturer, 'json');
-        return new JsonResponse($jsonManufacturer, Response::HTTP_OK, [], true);
-   }
 
-
-   #[Route('/api/manufacturers/{id}', name: 'delete_manufacturer', methods: ['DELETE'])]
-   public function delete(Manufacturer $manufacturer, EntityManagerInterface $em): JsonResponse 
-   {
-       $em->remove($manufacturer);
-       $em->flush();
-
-       return new JsonResponse("Manufacturer deleted", Response::HTTP_OK);
-   }
+    #[Route('/api/manufacturer/{id}', name: 'delete_manufacturer', methods: ['DELETE'])]
+    public function delete(Manufacturer $manufacturer, EntityManagerInterface $em): JsonResponse 
+    {
+        try {
+            $em->remove($manufacturer);
+            $em->flush();
+    
+            return new JsonResponse("Manufacturer deleted", Response::HTTP_OK);
+        } catch (\Exception $ex) {
+            return new JsonResponse(['error' => 'An error occurred while deleting the manufacturer'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }
