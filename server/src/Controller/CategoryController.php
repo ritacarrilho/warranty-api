@@ -11,9 +11,9 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\ManagerRegistry as PersistenceManagerRegistry;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class CategoryController extends AbstractController
 {
@@ -44,17 +44,20 @@ class CategoryController extends AbstractController
     }
 
     #[Route('/api/category', name:"create_category", methods: ['POST'])]
-    public function create(Request $request, PersistenceManagerRegistry $doctrine, SerializerInterface $serializer): JsonResponse
+    public function create(Request $request, EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse
     {
         try {
             $requestData = json_decode($request->getContent(), true);
 
+            if (!isset($requestData['label']) || empty($requestData['label'])) {
+                throw new BadRequestHttpException("Missing or empty 'label' field");
+            }
+
             $category = new Category();
             $category->setLabel($requestData['label']);
     
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($category);
-            $entityManager->flush();
+            $em->persist($category);
+            $em->flush();
     
             $jsonCategory = $serializer->serialize($category, 'json');
             $responseData = [
@@ -96,8 +99,12 @@ class CategoryController extends AbstractController
                 'json', 
                 [AbstractNormalizer::OBJECT_TO_POPULATE => $currentCategory]
             );
+
+            $requestData = json_decode($request->getContent(), true);
+            if (!isset($requestData['label']) || empty($requestData['label'])) {
+                throw new BadRequestHttpException("Missing or empty 'label' field");
+            }
     
-            $em->persist($updatedCategory);
             $em->flush();
     
             $jsonCategory = $serializer->serialize($updatedCategory, 'json');

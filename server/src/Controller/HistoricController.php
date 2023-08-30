@@ -35,6 +35,10 @@ class HistoricController extends AbstractController
             }
     
             $equipments = $this->equipmentRepository->findByHistoric($userId);
+            if(!$equipments) {
+                throw new HttpException("Equipments not found in historic", Response::HTTP_NOT_FOUND);
+            }
+
             $data = [];
     
             foreach ($equipments as $equipment) {
@@ -78,7 +82,6 @@ class HistoricController extends AbstractController
             }
     
             $equipment = $this->equipmentRepository->find($id);
-    
             if (!$equipment) {
                 throw new HttpException("Equipment not found", Response::HTTP_NOT_FOUND);
             }

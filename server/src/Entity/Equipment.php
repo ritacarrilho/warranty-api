@@ -37,7 +37,7 @@ class Equipment
     /**
      * @Groups({"equipment"})
      */
-    #[ORM\Column(length: 200)]
+    #[ORM\Column(length: 200, unique: true)]
     private ?string $serial_code = null;
     /**
     * @Groups({"equipment"})
@@ -167,6 +167,17 @@ class Equipment
         $this->user = $user;
 
         return $this;
+    }
+
+    public function getFormattedPurchaseDate(): ?string
+    {
+        $purchaseDate = $this->getPurchaseDate();
+        
+        if ($purchaseDate instanceof \DateTimeInterface) {
+            return $purchaseDate->format('Y-m-d');
+        }
+        
+        return null;
     }
 
     // /**

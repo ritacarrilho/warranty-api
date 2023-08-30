@@ -48,6 +48,9 @@ security:
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/users,roles: ROLE_ADMIN }
         - { path: ^/api/category,roles: ROLE_ADMIN }
+        - { path: ^/api/users,roles: ROLE_ADMIN }
+        - { path: ^/api/consumers,roles: ROLE_ADMIN }
+
         
         # - { path: ^/api, roles: [ROLE_ADMIN, ROLE_USER] }
 

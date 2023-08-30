@@ -2,21 +2,18 @@
 
 namespace App\Controller;
 
-use App\Entity\Document;
-use App\Entity\Equipment;
-use App\Entity\Manufacturer;
 use App\Entity\Warranty;
 use App\Repository\WarrantyRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Middleware\JwtMiddleware;
 use App\Repository\DocumentRepository;
+use App\Repository\EquipmentRepository;
 use App\Repository\ManufacturerRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -25,12 +22,17 @@ class WarrantyController extends AbstractController
     private $jwtMiddleware;
     private $warrantyRepository;
     private $documentRepository;
+    private $equipmentRepository;
+    private $manufacturerRepository;
 
-    public function __construct(JwtMiddleware $jwtMiddleware, WarrantyRepository $warrantyRepository, DocumentRepository $documentRepository)
+
+    public function __construct(JwtMiddleware $jwtMiddleware, WarrantyRepository $warrantyRepository, DocumentRepository $documentRepository, EquipmentRepository $equipmentRepository, ManufacturerRepository $manufacturerRepository)
     {
         $this->jwtMiddleware = $jwtMiddleware;
         $this->warrantyRepository = $warrantyRepository;
         $this->documentRepository = $documentRepository;
+        $this->equipmentRepository = $equipmentRepository;
+        $this->manufacturerRepository = $manufacturerRepository;
     }
 
     #[Route('/api/warranties', name: 'get_warranties', methods: ['GET'])]
@@ -45,14 +47,17 @@ class WarrantyController extends AbstractController
             }
     
             $warranties = $this->warrantyRepository->findOneByUser($userId);
+
+            if (empty($warranties)) {
+                return new JsonResponse(['message' => 'No warranty found'], Response::HTTP_NOT_FOUND);
+            }
+            
             $data = [];
     
             foreach ($warranties as $warranty) {
-                $startDate = $warranty->getStartDate();
-                $endDate = $warranty->getEndDate();
-    
                 $manufacturerId = null;
                 $manufacturer = $warranty->getManufacturer();
+                
                 if ($manufacturer !== null) {
                     $manufacturerId = $manufacturer->getId();
                 }
@@ -60,8 +65,8 @@ class WarrantyController extends AbstractController
                 $data[] = [
                     'id' => $warranty->getId(),
                     'reference' => $warranty->getReference(),
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
+                    'start_date' => $warranty->getFormattedStartDate(),
+                    'end_date' => $warranty->getFormattedEndDate(),
                     'equipment_id' => $warranty->getEquipment()->getId(),
                     'manufacturer_id' => $manufacturerId,
                 ];
@@ -74,7 +79,7 @@ class WarrantyController extends AbstractController
 
 
     #[Route('/api/warranty', name: 'create_warranty', methods: ['POST'])]
-    public function create(Request $request, ManagerRegistry $doctrine, SerializerInterface $serializer): JsonResponse 
+    public function create(Request $request, SerializerInterface $serializer, EntityManagerInterface $em): JsonResponse 
     {
         try {
             $authToken = $request->headers->get('Authorization');
@@ -86,30 +91,40 @@ class WarrantyController extends AbstractController
     
             $requestData = json_decode($request->getContent(), true);
     
-            // Verify if manufacturer_id is present in the request data, else set it to null
+            $equipment = $this->equipmentRepository->find($requestData['equipment_id']);
+            if(!$equipment) {
+                return new JsonResponse(['message' => 'Invalid equipment'], Response::HTTP_NOT_FOUND);
+            }
+
+            // Check if reference property exists in the request data
+            if (!isset($requestData['reference'])) {
+                throw new HttpException(Response::HTTP_BAD_REQUEST, "Reference is required");
+            }
+
+            // Check if reference is unique
+            $existingWarrantyWithReference = $this->warrantyRepository->findOneBy(['reference' => $requestData['reference']]);
+            if ($existingWarrantyWithReference) {
+                throw new HttpException(Response::HTTP_CONFLICT, "Warranty with the provided reference already exists.");
+            }
+
+            // Verify if manufacturer_id is in the request data
             $manufacturerId = isset($requestData['manufacturer_id']) ? $requestData['manufacturer_id'] : null;
-    
-            $entityManager = $doctrine->getManager();
-            $manufacturerRepository = $entityManager->getRepository(Manufacturer::class);
-            $equipmentRepository = $entityManager->getRepository(Equipment::class);
-    
-            $equipment = $equipmentRepository->find($requestData['equipment_id']);
-            
+
             // Only fetch manufacturer if manufacturer_id is in request
             $manufacturer = null;
             if ($manufacturerId !== null) {
-                $manufacturer = $manufacturerRepository->find($manufacturerId);
+                $manufacturer = $this->manufacturerRepository->find($manufacturerId);
             }
     
             $warranty = new Warranty();
             $warranty->setReference($requestData['reference'])
-                ->setStartDate(new \DateTime($requestData['start_date']))
-                ->setEndDate(new \DateTime($requestData['end_date']))
-                ->setEquipment($equipment)
-                ->setManufacturer($manufacturer);
+                    ->setStartDate(new \DateTime($requestData['start_date']))
+                    ->setEndDate(new \DateTime($requestData['end_date']))
+                    ->setEquipment($equipment)
+                    ->setManufacturer($manufacturer);
     
-            $entityManager->persist($warranty);
-            $entityManager->flush();
+            $em->persist($warranty);
+            $em->flush();
 
             $warrantyData = [
                 'id' => $warranty->getId(),
@@ -123,7 +138,7 @@ class WarrantyController extends AbstractController
             $serializedWarranty = $serializer->serialize($warrantyData, 'json');
 
             $responseData = [
-                'message' => 'Equipment created successfully',
+                'message' => 'Warranty created successfully',
                 'data' => json_decode($serializedWarranty, true)
             ];
     
@@ -145,17 +160,15 @@ class WarrantyController extends AbstractController
             }
     
             $warranty = $this->warrantyRepository->find($id);
-    
             if (!$warranty) {
                 return new JsonResponse("Warranty not found", Response::HTTP_NOT_FOUND);
             }
     
             $manufacturer = $warranty->getManufacturer();
             $documents = $this->documentRepository->findByWarranty($id);
-    
             $documentObj = [];
     
-            if ($documents !== null) {
+            if (!empty($documents) ) {
                 foreach ($documents as $document) {
                     $documentObj[] = [
                         'id' => $document->getId(),
@@ -168,8 +181,8 @@ class WarrantyController extends AbstractController
             $warrantyObject = [
                 'id' => $warranty->getId(),
                 'reference' => $warranty->getReference(),
-                'start_date' => $warranty->getStartDate()->format('Y-m-d'),
-                'end_date' => $warranty->getEndDate()->format('Y-m-d'),
+                'start_date' => $warranty->getFormattedStartDate(),
+                'end_date' => $warranty->getFormattedEndDate(),
                 'equipment_id' => $warranty->getEquipment()->getId(),
                 'manufacturer' => $manufacturer ? [
                     'id' => $manufacturer->getId(),
@@ -193,7 +206,7 @@ class WarrantyController extends AbstractController
 
 
     #[Route('/api/warranty/{id}', name:"update_warranty", methods:['PUT'])]
-    public function updateWarranty(int $id, Request $request, EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse 
+    public function update(int $id, Request $request, EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse 
     {
         try {
             $authToken = $request->headers->get('Authorization');
@@ -204,39 +217,41 @@ class WarrantyController extends AbstractController
             }
 
             $warranty = $this->warrantyRepository->find($id);
-
             if (!$warranty) {
                 throw new HttpException("Warranty not found", Response::HTTP_NOT_FOUND);
             }
 
             $requestData = json_decode($request->getContent(), true);
 
-            // Update warranty fields
-            if (isset($requestData['reference'])) {
-                $warranty->setReference($requestData['reference']);
+            // Check if the reference property exists in the request data
+            if (!isset($requestData['reference'])) {
+                throw new HttpException(Response::HTTP_BAD_REQUEST, "Warranty reference is required.");
             }
-            if (isset($requestData['start_date'])) {
-                $warranty->setStartDate(new \DateTime($requestData['start_date']));
+
+            // Check if the reference is unique
+            $existingWarrantyWithReference = $this->warrantyRepository->findOneBy(['reference' => $requestData['reference']]);
+            if ($existingWarrantyWithReference && $existingWarrantyWithReference->getId() !== $warranty->getId()) {
+                throw new HttpException(Response::HTTP_CONFLICT, "Warranty with the provided reference already exists.");
             }
-            if (isset($requestData['end_date'])) {
-                $warranty->setEndDate(new \DateTime($requestData['end_date']));
-            }
+
+            // Update the warranty data
+            $warranty->setReference($requestData['reference']);
 
             $em->flush();
 
             $warrantyData = [
                 'id' => $warranty->getId(),
                 'reference' => $warranty->getReference(),
-                'start_date' => $warranty->getStartDate()->format('Y-m-d'),
-                'end_date' => $warranty->getEndDate()->format('Y-m-d'),
+                'start_date' => $warranty->getFormattedStartDate(),
+                'end_date' => $warranty->getFormattedEndDate(),
                 'equipment_id' => $warranty->getEquipment()->getId(),
-                'manufacturer_id' => $warranty->getEquipment()->getId(),
+                'manufacturer_id' => $warranty->getManufacturer() ? $warranty->getManufacturer()->getId() : null,
             ];
-    
+
             $serializedWarranty = $serializer->serialize($warrantyData, 'json');
 
             $responseData = [
-                'message' => 'Equipment created successfully',
+                'message' => 'Warranty updated successfully',
                 'data' => json_decode($serializedWarranty, true)
             ];
 
@@ -266,9 +281,11 @@ class WarrantyController extends AbstractController
 
             $documents = $this->documentRepository->findByWarranty($id);
 
+            // delete associated warranty documents
             if ($documents !== null) {
                 foreach($documents as $document) {
                     $em->remove($document);
+                    // TODO: delete files from server
                 }
             }
 

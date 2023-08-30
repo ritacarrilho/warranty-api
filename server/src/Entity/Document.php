@@ -16,7 +16,7 @@ class Document
     #[ORM\Column(length: 100)]
     private ?string $name = null;
 
-    #[ORM\Column(length: 200)]
+    #[ORM\Column(length: 200, unique: true)]
     private ?string $path = null;
 
     #[ORM\ManyToOne(inversedBy: 'documents')]

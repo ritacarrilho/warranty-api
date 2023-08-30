@@ -5,17 +5,16 @@ namespace App\Controller;
 use App\Entity\Category;
 use App\Entity\Equipment;
 use App\Entity\User;
-use App\Entity\Warranty;
 use App\Repository\EquipmentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Middleware\JwtMiddleware;
+use App\Repository\DocumentRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use App\Repository\WarrantyRepository;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -25,12 +24,14 @@ class EquipmentController extends AbstractController
     private $jwtMiddleware;
     private $equipmentRepository;
     private $warrantyRepository;
+    private $documentRepository;
 
-    public function __construct(JwtMiddleware $jwtMiddleware, EquipmentRepository $equipmentRepository, WarrantyRepository $warrantyRepository)
+    public function __construct(JwtMiddleware $jwtMiddleware, EquipmentRepository $equipmentRepository, DocumentRepository $documentRepository, WarrantyRepository $warrantyRepository)
     {
         $this->jwtMiddleware = $jwtMiddleware;
         $this->equipmentRepository = $equipmentRepository;
         $this->warrantyRepository = $warrantyRepository;
+        $this->documentRepository = $documentRepository;
     }
 
     #[Route('/api/equipments', name:"get_equipments", methods: ['GET'])]
@@ -45,11 +46,14 @@ class EquipmentController extends AbstractController
             }
 
             $equipments = $this->equipmentRepository->findByUser($userId);
+
+            if (empty($equipments)) {
+                return new JsonResponse(['message' => 'No equipment found'], Response::HTTP_NOT_FOUND);
+            }
+            
             $data = [];
 
             foreach ($equipments as $equipment) {
-                $purchaseDate = $equipment->getPurchaseDate(); // format date
-
                 $category = [
                     'id' => $equipment->getCategory()->getId(),
                     'label' => $equipment->getCategory()->getLabel(),
@@ -61,7 +65,7 @@ class EquipmentController extends AbstractController
                     'brand' => $equipment->getBrand(),
                     'model' => $equipment->getModel(),
                     'serial_code' => $equipment->getSerialCode(),
-                    'purchase_date' => $purchaseDate->format('Y-m-d'),
+                    'purchase_date' => $equipment->getFormattedPurchaseDate(),
                     'is_active' => $equipment->isIsActive(),
                     'category_id' => $category['id']
                     // 'category' => $category
@@ -74,7 +78,7 @@ class EquipmentController extends AbstractController
     }
 
     #[Route('/api/equipment', name: 'create_equipment', methods: ['POST'])]
-    public function create(Request $request, ManagerRegistry $doctrine, SerializerInterface $serializer): JsonResponse 
+    public function create(Request $request, EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse 
     {
         try {
             $authToken = $request->headers->get('Authorization');
@@ -86,24 +90,37 @@ class EquipmentController extends AbstractController
 
             $requestData = json_decode($request->getContent(), true);
 
-            $entityManager = $doctrine->getManager();
-            $categoryRepository = $entityManager->getRepository(Category::class);
-            $userRepository = $entityManager->getRepository(User::class);
+            $categoryRepository = $em->getRepository(Category::class);
+            $userRepository = $em->getRepository(User::class);
+
+            // check required fields
+            $requiredFields = ['serial_code','category', 'name'];
+            foreach ($requiredFields as $field) {
+                if (!isset($requestData[$field])) {
+                    throw new HttpException(Response::HTTP_BAD_REQUEST, "Missing required field: $field");
+                }
+            }
 
             $category = $categoryRepository->find($requestData['category']);
             $user = $userRepository->find($userId);
 
-            $equipment = new Equipment();
-            $equipment->setName($requestData['name'])
-                ->setBrand($requestData['brand'])
-                ->setModel($requestData['model'])
-                ->setSerialCode($requestData['serial_code'])
-                ->setPurchaseDate(new \DateTime($requestData['purchase_date']))
-                ->setCategory($category)
-                ->setUser($user);
+            // Check if category and user were found
+            if (!$category || !$user) {
+                throw new HttpException(Response::HTTP_NOT_FOUND, "Category or user not found");
+            }
 
-            $entityManager->persist($equipment);
-            $entityManager->flush();
+            $equipment = new Equipment();
+            // check request fields
+            $equipment->setName($requestData['name'] ?: null)
+                        ->setBrand($requestData['brand'] ?: null)
+                        ->setModel($requestData['model'] ?: null)
+                        ->setSerialCode($requestData['serial_code'])
+                        ->setPurchaseDate(isset($requestData['purchase_date']) ? new \DateTime($requestData['purchase_date']) : null)
+                        ->setCategory($category)
+                        ->setUser($user);
+
+            $em->persist($equipment);
+            $em->flush();
 
             $equipmentData = [
                 'id' => $equipment->getId(),
@@ -111,7 +128,7 @@ class EquipmentController extends AbstractController
                 'brand' => $equipment->getBrand(),
                 'model' => $equipment->getModel(),
                 'serial_code' => $equipment->getSerialCode(),
-                'purchase_date' => $equipment->getPurchaseDate()->format('Y-m-d'),
+                'purchase_date' => $equipment->getFormattedPurchaseDate(),
                 'category' => [
                     'id' => $category->getId(),
                     'label' => $category->getLabel(),
@@ -148,7 +165,7 @@ class EquipmentController extends AbstractController
             }
 
             $equipment = $this->equipmentRepository->findEquipmentById($id, $userId);
-
+            // check if equipment exists
             if ($equipment) {
                 $jsonEquipment = $serializer->serialize($equipment, 'json', ['groups' => 'equipment']);
                 return new JsonResponse($jsonEquipment, Response::HTTP_OK, [], true);
@@ -172,13 +189,26 @@ class EquipmentController extends AbstractController
                 throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
-            $updatedEquipment = $serializer->deserialize($request->getContent(), 
-                Equipment::class, 
-                'json', 
+            $requestData = json_decode($request->getContent(), true);
+
+            // Check if the reference property exists in the request data
+            if (!isset($requestData['serial_code'])) {
+                throw new HttpException(Response::HTTP_BAD_REQUEST, "Serial code is required");
+            }
+    
+            // Check if the reference is unique
+            $existingEquipmentWithCode = $this->equipmentRepository->findOneBy(['serial_code' => $requestData['serial_code']]);
+            if ($existingEquipmentWithCode && $existingEquipmentWithCode->getId() !== $currentEquipment->getId()) {
+                throw new HttpException(Response::HTTP_CONFLICT, "Equipment with the provided serial code already exists.");
+            }
+
+            $updatedEquipment = $serializer->deserialize(
+                $request->getContent(),
+                Equipment::class,
+                'json',
                 [AbstractNormalizer::OBJECT_TO_POPULATE => $currentEquipment]
             );
             
-            $em->persist($updatedEquipment);
             $em->flush();
             
             $jsonEquipment = $serializer->serialize($updatedEquipment, 'json');
@@ -196,57 +226,65 @@ class EquipmentController extends AbstractController
 
 
    #[Route('/api/equipment/{id}', name: 'delete_equipment', methods: ['DELETE'])]
-   public function delete(Equipment $equipment, ManagerRegistry $doctrine, EntityManagerInterface $em, Request $request): JsonResponse 
+   public function delete(Equipment $equipment,  EntityManagerInterface $em, Request $request): JsonResponse 
    {
-        try {
-            $authToken = $request->headers->get('Authorization');
-            $userId = $this->jwtMiddleware->getUserId();
+       try {
+           $authToken = $request->headers->get('Authorization');
+           $userId = $this->jwtMiddleware->getUserId();
+   
+           if (!$authToken || !$userId) {
+               throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+           }
+   
+           $warranties = $this->warrantyRepository->findBy(['equipment' => $equipment]);
+           if ($warranties) {
+                // Find and delete associated documents
+                foreach ($warranties as $warranty) {
+                    $documents = $this->documentRepository->findBy(['warranty' => $warranty]);
 
-            if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                    foreach ($documents as $document) {
+                        // TODO: delete files from server
+                        $em->remove($document);
+                    }
+                    
+                    $em->remove($warranty);
+                }
             }
-            $entityManager = $doctrine->getManager();
-            $warrantyRepository = $entityManager->getRepository(Warranty::class);
-            $warranties = $warrantyRepository->findBy(['equipment' => $equipment]);
-
-            foreach ($warranties as $warranty) {
-                $em->remove($warranty);
-            }
-
-            $em->remove($equipment);
-            $em->flush();
-
-            return new JsonResponse("Equipment and its warranties deleted successfully", Response::HTTP_OK);
-        } catch (HttpException $exception) {
-            return new JsonResponse("Wrong request", Response::HTTP_NOT_FOUND);
-        } catch (HttpException $exception) {
-            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
-        }
-    }
-
+   
+           // Delete the equipment 
+           $em->remove($equipment);
+           $em->flush();
+   
+           return new JsonResponse("Equipment, warranties and associated documents deleted successfully", Response::HTTP_OK);
+       } catch (HttpException $exception) {
+           return new JsonResponse("Wrong request", Response::HTTP_NOT_FOUND);
+       } catch (HttpException $exception) {
+           return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
+       }
+   }
+   
     #[Route('/api/equipment/{id}/warranties', name:"get_equipment_warranties", methods: ['GET'])]
     public function listWarranties(Request $request, int $id): JsonResponse
     {
         try {
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
-    
             if (!$authToken || !$userId) {
                 throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $warranties = $this->warrantyRepository->getWarrantiesForEquipmentAndUser($id, $userId);
+            if(!$warranties) {
+                return new JsonResponse('No warranties found for this equipment', Response::HTTP_NOT_FOUND);}
+
             $data = [];
 
             foreach ($warranties as $warranty) {
-                $startDate = $warranty->getStartDate(); // format date
-                $endDate = $warranty->getEndDate(); // format date   
-
                 $data[] = [
                     'id' => $warranty->getId(),
                     'reference' => $warranty->getReference(),
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
+                    'start_date' => $warranty->getFormattedStartDate(),
+                    'end_date' => $warranty->getFormattedEndDate(),
                     'equipment_id' => $warranty->getEquipment()->getId(),
                     'manufacturer_id' => $warranty->getManufacturer()->getId(),
                 ];

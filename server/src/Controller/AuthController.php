@@ -10,10 +10,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
-use Doctrine\Persistence\ManagerRegistry as PersistenceManagerRegistry;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Middleware\JwtMiddleware;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\Serializer\SerializerInterface;
 
 
 class AuthController extends AbstractController
@@ -30,35 +31,52 @@ class AuthController extends AbstractController
     }
 
     #[Route('/register', name: 'api_register', methods: ['POST'])]
-    public function createUser(Request $request, PersistenceManagerRegistry $doctrine, UserPasswordHasherInterface $passHasher): JsonResponse {
+    public function createUser(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $passHasher, SerializerInterface $serializer): JsonResponse {
         try {
             $requestData = json_decode($request->getContent(), true);
-
-            $email = $requestData['email'];
-            $existingUser = $this->userRepository->findOneBy(['email' => $email]);
-
+            $existingUser = $this->userRepository->findOneBy(['email' => $requestData['email']]);
+    
             // check if email exists - unique key
             if ($existingUser) {
                 throw new HttpException(Response::HTTP_CONFLICT, "Email already exists");
             }
-
+    
             $user = new User();
             $user->setEmail($requestData['email'])
                 ->setPassword($passHasher->hashPassword($user, $requestData['password']))
                 ->setRoles(["ROLE_USER"]);
-
+    
             $consumer = new Consumer();
             $consumer->setFirstName($requestData['first_name'])
-                ->setLastName($requestData['last_name'])
-                ->setPhone($requestData['phone'])
+                ->setLastName($requestData['last_name'] ?: null)
+                ->setPhone($requestData['phone'] ?: null)
                 ->setUser($user);
-
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($user);
-            $entityManager->persist($consumer);
-            $entityManager->flush();
-
-            return new JsonResponse("Registration successful", Response::HTTP_CREATED);
+    
+            $em->persist($user);
+            $em->persist($consumer);
+            $em->flush();
+    
+            $userObject = [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles(),
+            ];
+    
+            $consumerObject = [
+                'id' => $consumer->getId(),
+                'first_name' => $consumer->getFirstName(),
+                'last_name' => $consumer->getLastName(),
+                'phone' => $consumer->getPhone(),
+            ];
+    
+            $response = [
+                'message' => 'Registration successful',
+                'user' => $userObject,
+                'consumer' => $consumerObject,
+            ];
+    
+            $jsonResponse = $serializer->serialize($response, 'json');
+            return new JsonResponse($jsonResponse, Response::HTTP_CREATED, [], true);
         } catch (HttpException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
@@ -66,7 +84,7 @@ class AuthController extends AbstractController
 
 
     #[Route('/api/reset', name: 'reset_password', methods: ['PUT'])]
-    public function resetPassword(PersistenceManagerRegistry $doctrine, Request $request): JsonResponse {
+    public function resetPassword(EntityManagerInterface $em, Request $request, SerializerInterface $serializer): JsonResponse {
         try {
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
@@ -76,8 +94,6 @@ class AuthController extends AbstractController
             }
     
             $requestData = json_decode($request->getContent(), true);
-    
-            $entityManager = $doctrine->getManager();
             $user = $this->userRepository->find($userId);
     
             if (!$user) {
@@ -85,14 +101,26 @@ class AuthController extends AbstractController
             }
     
             $user->setPassword($this->pass_hasher->hashPassword($user, $requestData['password']));
-            $entityManager->flush();
+            $em->flush();
     
-            return new JsonResponse("Password reset successful", Response::HTTP_OK);
+            $userObject = [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles(),
+            ];
+    
+            $response = [
+                'message' => 'Password reset successful',
+                'user' => $userObject,
+            ];
+    
+            $jsonResponse = $serializer->serialize($response, 'json');
+            return new JsonResponse($jsonResponse, Response::HTTP_OK, [], true);
         } catch (\Exception $e) {
-            return new JsonResponse("An error occurred", Response::HTTP_INTERNAL_SERVER_ERROR);
+            return new JsonResponse(['error' => 'An error occurred'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-
+    
 
     #[Route('/api/logout', name: 'logout', methods: ['POST'])]
     public function logout(Request $request): JsonResponse

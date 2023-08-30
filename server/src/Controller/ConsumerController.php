@@ -13,7 +13,10 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ConsumerController extends AbstractController
 {
@@ -26,13 +29,15 @@ class ConsumerController extends AbstractController
         $this->consumerRepository = $consumerRepository;
     }
 
+    // route admin
     #[Route('/api/consumers', name:"get_consumers", methods: ['GET'])]
     public function list(Request $request, ConsumerRepository $consumerRepository): JsonResponse
     {
         try {
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
-    
+
+            // check user and token
             if (!$authToken || !$userId) {
                 throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
@@ -45,7 +50,7 @@ class ConsumerController extends AbstractController
                     'id' => $consumer->getUser()->getId(),
                     'email' => $consumer->getUser()->getEmail(),
                 ];
-    
+                // response object
                 $data[] = [
                     'id' => $consumer->getId(),
                     'first_name' => $consumer->getFirstName(),
@@ -73,16 +78,18 @@ class ConsumerController extends AbstractController
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
 
+            // check user and token
             if (!$authToken || !$userId) {
                 throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $consumer = $consumerRepository->findByUser($userId);
-
+            // check if consumer exists
             if (!$consumer) {
                 throw new HttpException("Consumer not found", Response::HTTP_NOT_FOUND);
             }
 
+            // response object
             $consumerObj = [
                 'id' => $consumer->getId(),
                 'first_name' => $consumer->getFirstName(),
@@ -97,6 +104,7 @@ class ConsumerController extends AbstractController
             ];
 
             $jsonConsumer = $serializer->serialize($consumerObj, 'json');
+
             return new JsonResponse($jsonConsumer, Response::HTTP_OK, [], true);
         } catch (HttpException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
@@ -105,20 +113,21 @@ class ConsumerController extends AbstractController
 
 
     #[Route('/api/consumer', name: 'update_consumer', methods: ['PUT'])]
-    public function update(Request $request, SerializerInterface $serializer, EntityManagerInterface $em): JsonResponse
+    public function update(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
     {
         try {
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
-    
+
+            // check user and token
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                throw new BadRequestHttpException("Bad request");
             }
     
             $consumer = $this->consumerRepository->findByUser($userId);
-    
+            // check if consumer exists
             if (!$consumer) {
-                throw new HttpException("Consumer not found", Response::HTTP_NOT_FOUND);
+                throw new NotFoundHttpException("Consumer not found");
             }
     
             $updatedConsumer = $serializer->deserialize(
@@ -128,9 +137,8 @@ class ConsumerController extends AbstractController
                 [AbstractNormalizer::OBJECT_TO_POPULATE => $consumer]
             );
     
-            $em->persist($updatedConsumer);
             $em->flush();
-
+    
             $jsonUpdatedConsumer = $serializer->serialize($updatedConsumer, 'json', [
                 'groups' => ['consumer_response']
             ]);
@@ -141,8 +149,12 @@ class ConsumerController extends AbstractController
             ];
     
             return new JsonResponse($responseData, Response::HTTP_OK);
-        } catch (HttpException $exception) {
-            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
+        } catch (BadRequestHttpException $badRequestException) {
+            return new JsonResponse(['error' => $badRequestException->getMessage()], Response::HTTP_BAD_REQUEST);
+        } catch (NotFoundHttpException $notFoundException) {
+            return new JsonResponse(['error' => $notFoundException->getMessage()], Response::HTTP_NOT_FOUND);
+        } catch (\Exception $exception) {
+            return new JsonResponse(['error' => $exception], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

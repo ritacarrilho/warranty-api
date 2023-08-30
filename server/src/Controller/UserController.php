@@ -4,17 +4,15 @@ namespace App\Controller;
 
 use App\Repository\UserRepository;
 use App\Entity\User;
-use App\Entity\Consumer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Security\Core\Security;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\ManagerRegistry as PersistenceManagerRegistry;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Middleware\JwtMiddleware;
 use App\Repository\ConsumerRepository;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -23,14 +21,12 @@ class UserController extends AbstractController
 {
     private $userRepository;
     private $consumerRepository;
-    private $pass_hasher;
     private $jwtMiddleware;
 
-    public function __construct(JwtMiddleware $jwtMiddleware, UserRepository $userRepository, ConsumerRepository $consumerRepository,  UserPasswordHasherInterface $passwordHasher)
+    public function __construct(JwtMiddleware $jwtMiddleware, UserRepository $userRepository, ConsumerRepository $consumerRepository)
     {
         $this->userRepository = $userRepository;
         $this->consumerRepository = $consumerRepository;
-        $this->pass_hasher = $passwordHasher;
         $this->jwtMiddleware = $jwtMiddleware;
     }
 
@@ -42,6 +38,7 @@ class UserController extends AbstractController
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
             
+            // check user and token
             if (!$authToken || !$userId) {
                 throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
@@ -49,6 +46,7 @@ class UserController extends AbstractController
             $users = $this->userRepository->findAll();
             $data = [];
      
+            // response object, avoid to send passwords
             foreach ($users as $user) {
                 $data[] = [
                     'id' => $user->getId(),
@@ -56,6 +54,7 @@ class UserController extends AbstractController
                     'roles' => $user->getRoles(),
                 ];
             }
+
             return new JsonResponse($data, Response::HTTP_OK);
         } catch (HttpException $e) {
             return new JsonResponse(['error' => $e->getMessage()], $e->getStatusCode());
@@ -66,22 +65,31 @@ class UserController extends AbstractController
 
 
     #[Route('api/user', name:"get_user", methods:["GET"])]
-    public function showUser(SerializerInterface $serializer,Request $request): JsonResponse 
+    public function showUser(SerializerInterface $serializer, Request $request): JsonResponse 
     {
         try {
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
             
+            // check user and token
             if (!$authToken || !$userId) {
                 throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
-
+    
             $user = $this->userRepository->find($userId);
+            // response obj to not send password
             if ($user) {
-                $jsonUser = $serializer->serialize($user, 'json');
-                return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
+                $responseData = [
+                    'email' => $user->getEmail(),
+                    'roles' => $user->getRoles(),
+                ];
+
+            $jsonResponse = $serializer->serialize($responseData, 'json');
+
+            return new JsonResponse($jsonResponse, Response::HTTP_OK, [], true);
+            } else {
+                return new JsonResponse(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
             }
-            return new JsonResponse(null, Response::HTTP_NOT_FOUND);
         } catch (HttpException $e) {
             return new JsonResponse(['error' => $e->getMessage()], $e->getStatusCode());
         } catch (\Exception $e) {
@@ -91,25 +99,43 @@ class UserController extends AbstractController
 
 
     #[Route('/api/user', name:"update_user", methods:['PUT'])]
-    public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser, EntityManagerInterface $em): JsonResponse 
+    public function updateUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, Security $security): JsonResponse 
     {
         try {
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
-            
+
+            // check user and token
             if (!$authToken || !$userId) {
                 throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
+    
+            $requestData = json_decode($request->getContent(), true);
+    
+            // Validate and ensure the email is sent in the request body
+            if (!isset($requestData['email'])) {
+                throw new HttpException(Response::HTTP_BAD_REQUEST, "Email is required");
+            }
 
-            $updatedUser = $serializer->deserialize($request->getContent(), 
+            // Check if the email is unique
+            $existingUser = $this->userRepository->findOneBy(['email' => $requestData['email']]);
+            if ($existingUser) {
+                $authenticatedUser = $security->getUser();
+                if ($existingUser !== $authenticatedUser) {
+                    throw new HttpException(Response::HTTP_CONFLICT, "Email is already in use.");
+                }
+            }
+
+            // Deserialize the user entity
+            $updatedUser = $serializer->deserialize(
+                $request->getContent(), 
                 User::class, 
                 'json', 
-                [AbstractNormalizer::OBJECT_TO_POPULATE => $currentUser]
+                [AbstractNormalizer::OBJECT_TO_POPULATE => $authenticatedUser]
             );
-            
-            $em->persist($updatedUser);
+        
             $em->flush();
-
+    
             $jsonUser = $serializer->serialize($updatedUser, 'json');
             return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
         } catch (HttpException $e) {
@@ -117,27 +143,36 @@ class UserController extends AbstractController
         } catch (\Exception $e) {
             return new JsonResponse(['error' => 'An error occurred'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-   }
-
+    }
 
    #[Route('/api/user', name: 'delete_user', methods: ['DELETE'])]
-   public function deleteUser(PersistenceManagerRegistry $doctrine, EntityManagerInterface $em, Request $request): JsonResponse 
+   public function deleteUser(EntityManagerInterface $em, Request $request): JsonResponse 
    {
         try {
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
             
+            // check user and token
             if (!$authToken || !$userId) {
                 throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
-    
-            $entityManager = $doctrine->getManager();
-            $user = $this->userRepository->find($userId);
-            $consumer = $this->consumerRepository->findByUser($userId);
 
-            $entityManager->remove($user);
-            $entityManager->remove($consumer);
-            $entityManager->flush();
+            // Find and verify the user to delete
+            $user = $this->userRepository->find($userId);
+            if (!$user) {
+                throw new HttpException(Response::HTTP_NOT_FOUND, "User not found");
+            }
+    
+            // Find and verify the consumer to delete
+            $consumer = $this->consumerRepository->findByUser($userId);
+            if (!$consumer) {
+                throw new HttpException(Response::HTTP_NOT_FOUND, "Consumer not found");
+            }
+    
+            // persist and flush into DB
+            $em->remove($user);
+            $em->remove($consumer);
+            $em->flush();
 
             return new JsonResponse("User deleted", Response::HTTP_OK);
         } catch (HttpException $e) {

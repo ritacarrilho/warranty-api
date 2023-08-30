@@ -11,8 +11,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\ManagerRegistry as PersistenceManagerRegistry;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 class ManufacturerController extends AbstractController
@@ -29,6 +28,11 @@ class ManufacturerController extends AbstractController
     {
         try {
             $manufacturers = $this->manufacturerRepository->findAll();
+
+            if(empty($manufacturers)) {
+                return new JsonResponse("Manufacturers not found", Response::HTTP_NOT_FOUND);
+            }
+
             $data = [];
     
             foreach ($manufacturers as $manufacturer) {
@@ -52,21 +56,21 @@ class ManufacturerController extends AbstractController
 
 
     #[Route('/api/manufacturer', name:"create_manufacturer", methods: ['POST'])]
-    public function create(Request $request, PersistenceManagerRegistry $doctrine, SerializerInterface $serializer): JsonResponse
+    public function create(Request $request, EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse
     {
         try {
             $requestData = json_decode($request->getContent(), true);
     
-            if (!isset($requestData['name']) || empty($requestData['name']) ||
-                !isset($requestData['email']) || empty($requestData['email']) ||
-                !isset($requestData['phone']) || empty($requestData['phone']) ||
-                !isset($requestData['address']) || empty($requestData['address']) ||
-                !isset($requestData['zip_code']) || empty($requestData['zip_code']) ||
-                !isset($requestData['city']) || empty($requestData['city']) ||
-                !isset($requestData['country']) || empty($requestData['country'])
-            ) {
-                return new JsonResponse(['error' => 'Invalid data. All fields are required.'], Response::HTTP_BAD_REQUEST);
-            }
+            // if (!isset($requestData['name']) || empty($requestData['name']) ||
+            //     !isset($requestData['email']) || empty($requestData['email']) ||
+            //     !isset($requestData['phone']) || empty($requestData['phone']) ||
+            //     !isset($requestData['address']) || empty($requestData['address']) ||
+            //     !isset($requestData['zip_code']) || empty($requestData['zip_code']) ||
+            //     !isset($requestData['city']) || empty($requestData['city']) ||
+            //     !isset($requestData['country']) || empty($requestData['country'])
+            // ) {
+            //     return new JsonResponse(['error' => 'Invalid data. All fields are required.'], Response::HTTP_BAD_REQUEST);
+            // }
     
             $manufacturer = new Manufacturer();
             $manufacturer->setName($requestData['name'])
@@ -77,9 +81,8 @@ class ManufacturerController extends AbstractController
                 ->setCity($requestData['city'])
                 ->setCountry($requestData['country']);
     
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($manufacturer);
-            $entityManager->flush();
+            $em->persist($manufacturer);
+            $em->flush();
     
             $jsonManufacturer = $serializer->serialize($manufacturer, 'json');
             return new JsonResponse($jsonManufacturer, Response::HTTP_CREATED, [], true);
@@ -111,13 +114,18 @@ class ManufacturerController extends AbstractController
     public function update(Request $request, SerializerInterface $serializer, Manufacturer $currentManufacturer, EntityManagerInterface $em): JsonResponse 
     {
         try {
+            $manufacturer = $this->manufacturerRepository->find($currentManufacturer);
+
+            if(!$manufacturer){
+                throw new HttpException("Manufacturer not found", Response::HTTP_NOT_FOUND);
+            }
+
             $updatedManufacturer = $serializer->deserialize($request->getContent(), 
                 Manufacturer::class, 
                 'json', 
                 [AbstractNormalizer::OBJECT_TO_POPULATE => $currentManufacturer]
             );
-            
-            $em->persist($updatedManufacturer);
+
             $em->flush();
     
             $jsonManufacturer = $serializer->serialize($updatedManufacturer, 'json');
@@ -129,9 +137,14 @@ class ManufacturerController extends AbstractController
 
 
     #[Route('/api/manufacturer/{id}', name: 'delete_manufacturer', methods: ['DELETE'])]
-    public function delete(Manufacturer $manufacturer, EntityManagerInterface $em): JsonResponse 
+    public function delete(Manufacturer $manufacturer, EntityManagerInterface $em, Manufacturer $currentManufacturer): JsonResponse 
     {
         try {
+            $manufacturer = $this->manufacturerRepository->find($currentManufacturer);
+            if(!$manufacturer){
+                throw new HttpException("Manufacturer not found", Response::HTTP_NOT_FOUND);
+            }
+
             $em->remove($manufacturer);
             $em->flush();
     

@@ -17,7 +17,7 @@ class Warranty
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, unique: true)]
     private ?string $reference = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
@@ -104,6 +104,28 @@ class Warranty
         $this->manufacturer = $manufacturer;
 
         return $this;
+    }
+
+    public function getFormattedStartDate(): ?string
+    {
+        $startDate = $this->getStartDate();
+
+        if ($startDate instanceof \DateTimeInterface) {
+            return $startDate->format('Y-m-d');
+        }
+
+        return null;
+    }
+
+    public function getFormattedEndDate(): ?string
+    {
+        $endDate = $this->getEndDate();
+
+        if ($endDate instanceof \DateTimeInterface) {
+            return $endDate->format('Y-m-d');
+        }
+
+        return null;
     }
 
     // /**
