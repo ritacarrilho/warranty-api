@@ -113,7 +113,7 @@ class AppFixtures extends Fixture
         $equip_two->setName("Iphone SE")
                 ->setBrand("Apple")
                 ->setModel("Iphone SE 2020")
-                ->setSerialCode("455D4700TT")
+                ->setSerialCode("3459GFJFdf3")
                 ->setPurchaseDate(new \DateTime('2021/11/23'))
                 ->setIsActive(1)
                 ->setCategory($this->getReference('category-'. 6))
