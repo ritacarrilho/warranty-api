@@ -117,7 +117,7 @@ class ManufacturerController extends AbstractController
             $manufacturer = $this->manufacturerRepository->find($currentManufacturer);
 
             if(!$manufacturer){
-                throw new HttpException("Manufacturer not found", Response::HTTP_NOT_FOUND);
+                return new JsonResponse("Manufacturer not found", Response::HTTP_NOT_FOUND);
             }
 
             $updatedManufacturer = $serializer->deserialize($request->getContent(), 
@@ -142,7 +142,7 @@ class ManufacturerController extends AbstractController
         try {
             $manufacturer = $this->manufacturerRepository->find($currentManufacturer);
             if(!$manufacturer){
-                throw new HttpException("Manufacturer not found", Response::HTTP_NOT_FOUND);
+                return new JsonResponse("Manufacturer not found", Response::HTTP_NOT_FOUND);
             }
 
             $em->remove($manufacturer);

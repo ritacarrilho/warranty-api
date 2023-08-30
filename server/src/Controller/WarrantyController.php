@@ -43,7 +43,7 @@ class WarrantyController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
     
             $warranties = $this->warrantyRepository->findOneByUser($userId);
@@ -86,7 +86,7 @@ class WarrantyController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
     
             $requestData = json_decode($request->getContent(), true);
@@ -98,13 +98,13 @@ class WarrantyController extends AbstractController
 
             // Check if reference property exists in the request data
             if (!isset($requestData['reference'])) {
-                throw new HttpException(Response::HTTP_BAD_REQUEST, "Reference is required");
+                return new JsonResponse(Response::HTTP_BAD_REQUEST, "Reference is required");
             }
 
             // Check if reference is unique
             $existingWarrantyWithReference = $this->warrantyRepository->findOneBy(['reference' => $requestData['reference']]);
             if ($existingWarrantyWithReference) {
-                throw new HttpException(Response::HTTP_CONFLICT, "Warranty with the provided reference already exists.");
+                return new JsonResponse(Response::HTTP_CONFLICT, "Warranty with the provided reference already exists.");
             }
 
             // Verify if manufacturer_id is in the request data
@@ -156,7 +156,7 @@ class WarrantyController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                throw new HttpException(Response::HTTP_BAD_REQUEST, "Bad request");
+                return new JsonResponse(Response::HTTP_BAD_REQUEST, "Bad request");
             }
     
             $warranty = $this->warrantyRepository->find($id);
@@ -213,25 +213,25 @@ class WarrantyController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
 
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $warranty = $this->warrantyRepository->find($id);
             if (!$warranty) {
-                throw new HttpException("Warranty not found", Response::HTTP_NOT_FOUND);
+                return new JsonResponse("Warranty not found", Response::HTTP_NOT_FOUND);
             }
 
             $requestData = json_decode($request->getContent(), true);
 
             // Check if the reference property exists in the request data
             if (!isset($requestData['reference'])) {
-                throw new HttpException(Response::HTTP_BAD_REQUEST, "Warranty reference is required.");
+                return new JsonResponse(Response::HTTP_BAD_REQUEST, "Warranty reference is required.");
             }
 
             // Check if the reference is unique
             $existingWarrantyWithReference = $this->warrantyRepository->findOneBy(['reference' => $requestData['reference']]);
             if ($existingWarrantyWithReference && $existingWarrantyWithReference->getId() !== $warranty->getId()) {
-                throw new HttpException(Response::HTTP_CONFLICT, "Warranty with the provided reference already exists.");
+                return new JsonResponse(Response::HTTP_CONFLICT, "Warranty with the provided reference already exists.");
             }
 
             // Update the warranty data
@@ -270,13 +270,13 @@ class WarrantyController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
 
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $warranty = $this->warrantyRepository->find($id);
 
             if (!$warranty) {
-                throw new HttpException("Warranty not found", Response::HTTP_NOT_FOUND);
+                return new JsonResponse("Warranty not found", Response::HTTP_NOT_FOUND);
             }
 
             $documents = $this->documentRepository->findByWarranty($id);

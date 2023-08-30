@@ -39,7 +39,7 @@ class ConsumerController extends AbstractController
 
             // check user and token
             if (!$authToken || !$userId) {
-                throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
+                return new JsonResponse("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
     
             $consumers = $consumerRepository->findAll();
@@ -80,13 +80,13 @@ class ConsumerController extends AbstractController
 
             // check user and token
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $consumer = $consumerRepository->findByUser($userId);
             // check if consumer exists
             if (!$consumer) {
-                throw new HttpException("Consumer not found", Response::HTTP_NOT_FOUND);
+                return new JsonResponse("Consumer not found", Response::HTTP_NOT_FOUND);
             }
 
             // response object
@@ -121,13 +121,13 @@ class ConsumerController extends AbstractController
 
             // check user and token
             if (!$authToken || !$userId) {
-                throw new BadRequestHttpException("Bad request");
+                return new JsonResponse("Bad request", Response::HTTP_NOT_FOUND);
             }
     
             $consumer = $this->consumerRepository->findByUser($userId);
             // check if consumer exists
             if (!$consumer) {
-                throw new NotFoundHttpException("Consumer not found");
+                return new JsonResponse("Consumer not found", Response::HTTP_NOT_FOUND);
             }
     
             $updatedConsumer = $serializer->deserialize(

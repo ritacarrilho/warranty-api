@@ -38,7 +38,7 @@ class AuthController extends AbstractController
     
             // check if email exists - unique key
             if ($existingUser) {
-                throw new HttpException(Response::HTTP_CONFLICT, "Email already exists");
+                return new JsonResponse(Response::HTTP_CONFLICT, "Email already exists");
             }
     
             $user = new User();

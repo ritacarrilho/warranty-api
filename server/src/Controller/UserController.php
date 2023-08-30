@@ -40,7 +40,7 @@ class UserController extends AbstractController
             
             // check user and token
             if (!$authToken || !$userId) {
-                throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
+                return new JsonResponse("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
     
             $users = $this->userRepository->findAll();
@@ -73,7 +73,7 @@ class UserController extends AbstractController
             
             // check user and token
             if (!$authToken || !$userId) {
-                throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
+                return new JsonResponse("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
     
             $user = $this->userRepository->find($userId);
@@ -107,14 +107,14 @@ class UserController extends AbstractController
 
             // check user and token
             if (!$authToken || !$userId) {
-                throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
+                return new JsonResponse("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
     
             $requestData = json_decode($request->getContent(), true);
     
             // Validate and ensure the email is sent in the request body
             if (!isset($requestData['email'])) {
-                throw new HttpException(Response::HTTP_BAD_REQUEST, "Email is required");
+                return new JsonResponse(Response::HTTP_BAD_REQUEST, "Email is required");
             }
 
             // Check if the email is unique
@@ -122,7 +122,7 @@ class UserController extends AbstractController
             if ($existingUser) {
                 $authenticatedUser = $security->getUser();
                 if ($existingUser !== $authenticatedUser) {
-                    throw new HttpException(Response::HTTP_CONFLICT, "Email is already in use.");
+                    return new JsonResponse(Response::HTTP_CONFLICT, "Email is already in use.");
                 }
             }
 
@@ -154,19 +154,19 @@ class UserController extends AbstractController
             
             // check user and token
             if (!$authToken || !$userId) {
-                throw new HttpException("Unauthorized", Response::HTTP_UNAUTHORIZED);
+                return new JsonResponse("Unauthorized", Response::HTTP_UNAUTHORIZED);
             }
 
             // Find and verify the user to delete
             $user = $this->userRepository->find($userId);
             if (!$user) {
-                throw new HttpException(Response::HTTP_NOT_FOUND, "User not found");
+                return new JsonResponse(Response::HTTP_NOT_FOUND, "User not found");
             }
     
             // Find and verify the consumer to delete
             $consumer = $this->consumerRepository->findByUser($userId);
             if (!$consumer) {
-                throw new HttpException(Response::HTTP_NOT_FOUND, "Consumer not found");
+                return new JsonResponse(Response::HTTP_NOT_FOUND, "Consumer not found");
             }
     
             // persist and flush into DB

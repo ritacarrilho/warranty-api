@@ -31,12 +31,12 @@ class HistoricController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
     
             $equipments = $this->equipmentRepository->findByHistoric($userId);
             if(!$equipments) {
-                throw new HttpException("Equipments not found in historic", Response::HTTP_NOT_FOUND);
+                return new JsonResponse("Equipments not found in historic", Response::HTTP_NOT_FOUND);
             }
 
             $data = [];
@@ -78,12 +78,12 @@ class HistoricController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
     
             $equipment = $this->equipmentRepository->find($id);
             if (!$equipment) {
-                throw new HttpException("Equipment not found", Response::HTTP_NOT_FOUND);
+                return new JsonResponse("Equipment not found", Response::HTTP_NOT_FOUND);
             }
     
             $requestData = json_decode($request->getContent(), true);
