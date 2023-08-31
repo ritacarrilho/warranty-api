@@ -9,7 +9,7 @@
 * [Functionalities](#functionalities)
 
 ## General Info
-Web site for Bicycle Atelier, nonprofit organization. Dev environment: Docker and Lando.
+Mobile application and Api for equipments and warranties management.
 
 ## Technologies:
 * Symfony
