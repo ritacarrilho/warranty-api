@@ -3,26 +3,34 @@
 namespace App\Entity;
 
 use App\Repository\WarrantyRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 
 #[ORM\Entity(repositoryClass: WarrantyRepository::class)]
 class Warranty
 {
+    /**
+    * @Groups({"document"})
+    */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
-
+    /**
+    * @Groups({"document"})
+    */
     #[ORM\Column(length: 255, unique: true)]
     private ?string $reference = null;
-
+    /**
+    * @Groups({"document"})
+    */
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $start_date = null;
-
+    /**
+    * @Groups({"document"})
+    */
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTimeInterface $end_date = null;
 

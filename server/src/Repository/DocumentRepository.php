@@ -26,9 +26,33 @@ class DocumentRepository extends ServiceEntityRepository
        return $this->createQueryBuilder('d')
            ->andWhere('d.warranty = :val')
            ->setParameter('val', $warranty_id)
-           ->setMaxResults(10)
            ->getQuery()
            ->getResult();
+   }
+
+   public function isDocumentBelongsToUser(int $document_id, int $user_id): array
+   {
+        return $this->createQueryBuilder('d')
+            ->join('d.warranty', 'w')
+            ->join('w.equipment', 'e')
+            ->where('e.user = :userId')
+            ->andWhere('d.id = :documentId')
+            ->setParameter('userId', $user_id)
+            ->setParameter('documentId', $document_id)
+            ->getQuery()
+            ->getResult();
+   }
+
+
+   public function findByUser($user_id): array
+   {
+       return $this->createQueryBuilder('d')
+                ->join('d.warranty', 'w')
+                ->join('w.equipment', 'e')
+                ->where('e.user = :userId')
+                ->setParameter('userId', $user_id)
+                ->getQuery()
+                ->getResult();
    }
 
 //    /**

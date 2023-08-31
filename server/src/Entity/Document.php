@@ -4,21 +4,32 @@ namespace App\Entity;
 
 use App\Repository\DocumentRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+
 
 #[ORM\Entity(repositoryClass: DocumentRepository::class)]
 class Document
 {
+    /**
+    * @Groups({"document"})
+    */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
-
+    /**
+    * @Groups({"document"})
+    */
     #[ORM\Column(length: 100)]
     private ?string $name = null;
-
+    /**
+    * @Groups({"document"})
+    */
     #[ORM\Column(length: 200, unique: true)]
     private ?string $path = null;
-
+    /**
+    * @Groups({"document"})
+    */
     #[ORM\ManyToOne(inversedBy: 'documents')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Warranty $warranty = null;

@@ -11,148 +11,137 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Middleware\JwtMiddleware;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
-//TODO: file path unique
 
 class DocumentController extends AbstractController
 {
+
+    private $jwtMiddleware;
     private $documentRepository;
 
-    public function __construct(DocumentRepository $documentRepository)
+    public function __construct(JwtMiddleware $jwtMiddleware, DocumentRepository $documentRepository)
     {
+        $this->jwtMiddleware = $jwtMiddleware;
         $this->documentRepository = $documentRepository;
     }
 
-    #[Route('/api/documents', name:"get_documents", methods: ['GET'])]
-    public function list(): JsonResponse
+    #[Route('/api/documents', name: 'list_document', methods: ['GET'])]
+    public function list(Request $request, SerializerInterface $serializer): JsonResponse
     {
         try {
-            $documents = $this->documentRepository->findAll();
-            $data = [];
-
-            foreach ($documents as $document) {
-                $data[] = [
-                    'id' => $document->getId(),
-                    'name' => $document->getName(),
-                    'path' => $document->getPath(),
-                ];
+            $authToken = $request->headers->get('Authorization');
+            $userId = $this->jwtMiddleware->getUserId();
+    
+            if (!$authToken || !$userId) {
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
-            return new JsonResponse($data, Response::HTTP_OK);
-        } catch (\Exception $exception) {
-            return new JsonResponse(['error' => 'An error occurred while fetching documents.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $documents = $this->documentRepository->findByUser($userId);
+
+            if (!$documents) {
+                return new JsonResponse("Documents not found", Response::HTTP_NOT_FOUND);
+            }
+            
+            if(!empty($documents)){
+                $serializedDocuments = $serializer->serialize($documents, 'json', ['groups' => 'document']);
+            
+                return new JsonResponse($serializedDocuments, Response::HTTP_OK, [], true);
+            }
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
     }
 
-    // #[Route('/api/document', name:"create_document", methods: ['POST'])]
-    // public function create(Request $request, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
-    // {
-    //     try {
-    //         $requestData = json_decode($request->request->get('data'), true);
-
-    //         $uploadedFile = $request->files->get('file');
-    //         $fileDirectory = 'path_to_your_upload_directory'; // Configure this
-    //         $fileName = $this->generateUniqueFileName().'.'.$uploadedFile->getClientOriginalExtension();
-
-    //         $uploadedFile->move($fileDirectory, $fileName);
-
-    //         $document = new Document();
-    //         $document->setName($requestData['name'])
-    //             ->setPath($fileDirectory.'/'.$fileName); // Save the full path
-
-    //         // Validate the document entity
-    //         $errors = $validator->validate($document);
-    //         if (count($errors) > 0) {
-    //             $errorMessages = [];
-    //             foreach ($errors as $error) {
-    //                 $errorMessages[] = $error->getMessage();
-    //             }
-    //             return new JsonResponse(['error' => $errorMessages], Response::HTTP_BAD_REQUEST);
-    //         }
-            
-    //         $em->persist($document);
-    //         $em->flush();
-
-    //         return new JsonResponse("Document created successfully", Response::HTTP_CREATED);
-    //     } catch (\Exception $exception) {
-    //         return new JsonResponse(['error' => 'An error occurred while creating the document.'], Response::HTTP_INTERNAL_SERVER_ERROR);
-    //     }
-    // }
-
-    #[Route('api/document/{id}', name:"get_document", methods:["GET"])]
-    public function show(int $id, SerializerInterface $serializer): JsonResponse 
+    #[Route('/api/document/{id}', name: 'get_document', methods: ['GET'])]
+    public function show(Request $request, Document $document, SerializerInterface $serializer): JsonResponse
     {
         try {
-            $document = $this->documentRepository->find($id);
+            $authToken = $request->headers->get('Authorization');
+            $userId = $this->jwtMiddleware->getUserId();
+    
+            if (!$authToken || !$userId) {
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
+            }
+            // check if requested doc belongs to user connected
+            $doc = $this->documentRepository->isDocumentBelongsToUser($document->getId(), $userId);
 
-            if ($document) {
-                $documentData = [
-                    'id' => $document->getId(),
-                    'name' => $document->getName(),
-                    'path' => $document->getPath(),
-                ];
-
-                return new JsonResponse($documentData, Response::HTTP_OK);
+            if(!$doc) {
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
-            return new JsonResponse(['error' => 'Document not found'], Response::HTTP_NOT_FOUND);
-        } catch (\Exception $ex) {
-            return new JsonResponse(['error' => 'An error occurred while retrieving the document'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $serializedDocument = $serializer->serialize($document, 'json', ['groups' => 'document']);
+            return new JsonResponse($serializedDocument, Response::HTTP_OK, [], true);
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
     }
 
-    #[Route('/api/document/{id}', name:"update_document", methods:['PUT'])]
-    public function update(int $id, Request $request, EntityManagerInterface $em, DocumentRepository $documentRepository, ValidatorInterface $validator): JsonResponse 
+    #[Route('/api/document', name: 'upload_document', methods: ['POST'])]
+    public function upload(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
         try {
-            $document = $documentRepository->find($id);
+            $authToken = $request->headers->get('Authorization');
+            $userId = $this->jwtMiddleware->getUserId();
+    
+            if (!$authToken || !$userId) {
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
+            }
+            
+            $uploadedFile = $request->files->get('path');
 
-            if (!$document) {
-                return new JsonResponse(['error' => 'Document not found'], Response::HTTP_NOT_FOUND);
+            if (!$uploadedFile) {
+                return new JsonResponse('No document uploaded', Response::HTTP_BAD_REQUEST);
             }
 
-            $requestData = json_decode($request->getContent(), true);
-            
-            // Update document fields
-            $document->setName($requestData['name']);
+            // Generate a unique document name
+            $originalDocName = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
+            $newDocName = $originalDocName . '-' . uniqid() . '.' . $uploadedFile->guessExtension();
 
-            $em->flush();
+            // Move the uploaded document to the public/uploads/documents directory
+            $uploadedFile->move($this->getParameter('uploads_directory'), $newDocName);
 
-            return new JsonResponse("Document updated successfully", Response::HTTP_OK);
-        } catch (\Exception $ex) {
-            return new JsonResponse(['error' => 'An error occurred while updating the document'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            // Save document information to the database
+            $document = new Document();
+            $document->setName($newDocName);
+            $document->setPath('/uploads/documents/' . $newDocName);
+            $entityManager->persist($document);
+            $entityManager->flush();
+
+            return new JsonResponse(['message' => 'Document uploaded successfully'], Response::HTTP_CREATED);
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
     }
 
     #[Route('/api/document/{id}', name: 'delete_document', methods: ['DELETE'])]
-    public function delete(int $id, DocumentRepository $documentRepository, EntityManagerInterface $em): JsonResponse 
+    public function deleteDocument(Request $request, Document $document, EntityManagerInterface $entityManager): JsonResponse
     {
         try {
-            $document = $documentRepository->find($id);
-
-            if (!$document) {
-                return new JsonResponse(['error' => 'Document not found'], Response::HTTP_NOT_FOUND);
+            $authToken = $request->headers->get('Authorization');
+            $userId = $this->jwtMiddleware->getUserId();
+    
+            if (!$authToken || !$userId) {
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
-            // Delete the file from storage
-            $path = $document->getPath();
-            if (file_exists($path)) {
-                unlink($path);
+            // Delete the document from the public/uploads/documents directory
+            $documentPath = $this->getParameter('uploads_directory') . '/' . $document->getName();
+            
+            if (file_exists($documentPath)) {
+                unlink($documentPath);
             }
 
-            $em->remove($document);
-            $em->flush();
+            // Remove document entry from the database
+            $entityManager->remove($document);
+            $entityManager->flush();
 
-            return new JsonResponse("Document deleted successfully", Response::HTTP_OK);
-        } catch (\Exception $ex) {
-            return new JsonResponse(['error' => 'An error occurred while deleting the document'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return new JsonResponse(['message' => 'Document deleted successfully'], Response::HTTP_OK);
+        } catch (HttpException $exception) {
+            return new JsonResponse("Wrong request", Response::HTTP_NOT_FOUND);
+        } catch (HttpException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
     }
-
-    // Utility function to generate unique file names
-//     private function generateUniqueFileName(): string
-//     {
-//         return md5(uniqid());
-//     }
 }

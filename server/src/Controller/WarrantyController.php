@@ -281,12 +281,17 @@ class WarrantyController extends AbstractController
 
             $documents = $this->documentRepository->findByWarranty($id);
 
-            // delete associated warranty documents
-            if ($documents !== null) {
-                foreach($documents as $document) {
-                    $em->remove($document);
-                    // TODO: delete files from server
+            foreach ($documents as $document) {
+                // Delete the document from the public/uploads/documents directory
+                $documentPath = $this->getParameter('uploads_directory') . '/' . $document->getName();
+                            
+                if (file_exists($documentPath)) {
+                    unlink($documentPath);
                 }
+
+                // Remove document entry from the database
+                $em->remove($document);
+                $em->flush();
             }
 
             $em->remove($warranty);
