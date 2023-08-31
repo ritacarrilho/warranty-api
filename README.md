@@ -3,9 +3,9 @@
 ## Table of contents
 * [General Info](#general-info)
 * [Technologies](#technologies)
-* [Back End](#back-end)
+* [Backend](#back-end)
 * [Api](#api)
-* [Front End](#front-end)
+* [Frontend](#front-end)
 * [Functionalities](#functionalities)
 
 ## General Info
@@ -17,7 +17,7 @@ Mobile application and Api for equipments and warranties management.
 * Flutter
 * Docker
 
-## Back End
+## Backend
 Backend and API developed in Symfony, Database in MySQL.
 Creation of accounts, generation of JWT token and implementation of authentication system.
 Access to data restricted according to each user, they can only access their data. Authentification sent in requests header to verify the user connected.
@@ -28,7 +28,7 @@ API Rest developed without framework or API bundle, entities added to Api with t
 Implementation of controllers CRUD for each API endpoint. Data fetched from Database from queries in the repositories.
 Private Api with authentification to fetch, delete, modify or add new data. 
 
-## Front End
+## Frontend
 Front end developed in React and styled with SCSS. Development of components and requests made with library Axios.
 
 ## Functionalities 
