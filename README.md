@@ -16,7 +16,6 @@ Mobile application and Api for equipments and warranties management.
 * MySQL
 * Flutter
 * Docker
-* Lando
 
 ## Back End
 Backend and API developed in Symfony, Database in MySQL.
