@@ -50,7 +50,7 @@ class CategoryController extends AbstractController
             $requestData = json_decode($request->getContent(), true);
 
             if (!isset($requestData['label']) || empty($requestData['label'])) {
-                throw new BadRequestHttpException("Missing or empty 'label' field");
+                return new JsonResponse("Missing or empty 'label' field");
             }
 
             $category = new Category();
@@ -102,7 +102,7 @@ class CategoryController extends AbstractController
 
             $requestData = json_decode($request->getContent(), true);
             if (!isset($requestData['label']) || empty($requestData['label'])) {
-                throw new BadRequestHttpException("Missing or empty 'label' field");
+                return new JsonResponse("Missing or empty 'label' field");
             }
     
             $em->flush();

@@ -31,9 +31,9 @@ services:
     App\Repository\DocumentRepository:
         arguments: ['@doctrine']
 
-    App\Controller\DocumentController:
-        arguments:
-            $documentRepository: '@App\Repository\DocumentRepository'
-        tags: ['controller.service_arguments']
+    # App\Controller\DocumentController:
+    #     arguments:
+    #         $documentRepository: '@App\Repository\DocumentRepository'
+    #     tags: ['controller.service_arguments']
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

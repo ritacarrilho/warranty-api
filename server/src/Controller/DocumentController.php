@@ -45,40 +45,40 @@ class DocumentController extends AbstractController
         }
     }
 
-    #[Route('/api/document', name:"create_document", methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
-    {
-        try {
-            $requestData = json_decode($request->request->get('data'), true);
+    // #[Route('/api/document', name:"create_document", methods: ['POST'])]
+    // public function create(Request $request, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
+    // {
+    //     try {
+    //         $requestData = json_decode($request->request->get('data'), true);
 
-            $uploadedFile = $request->files->get('file');
-            $fileDirectory = 'path_to_your_upload_directory'; // Configure this
-            $fileName = $this->generateUniqueFileName().'.'.$uploadedFile->getClientOriginalExtension();
+    //         $uploadedFile = $request->files->get('file');
+    //         $fileDirectory = 'path_to_your_upload_directory'; // Configure this
+    //         $fileName = $this->generateUniqueFileName().'.'.$uploadedFile->getClientOriginalExtension();
 
-            $uploadedFile->move($fileDirectory, $fileName);
+    //         $uploadedFile->move($fileDirectory, $fileName);
 
-            $document = new Document();
-            $document->setName($requestData['name'])
-                ->setPath($fileDirectory.'/'.$fileName); // Save the full path
+    //         $document = new Document();
+    //         $document->setName($requestData['name'])
+    //             ->setPath($fileDirectory.'/'.$fileName); // Save the full path
 
-            // Validate the document entity
-            $errors = $validator->validate($document);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-                return new JsonResponse(['error' => $errorMessages], Response::HTTP_BAD_REQUEST);
-            }
+    //         // Validate the document entity
+    //         $errors = $validator->validate($document);
+    //         if (count($errors) > 0) {
+    //             $errorMessages = [];
+    //             foreach ($errors as $error) {
+    //                 $errorMessages[] = $error->getMessage();
+    //             }
+    //             return new JsonResponse(['error' => $errorMessages], Response::HTTP_BAD_REQUEST);
+    //         }
             
-            $em->persist($document);
-            $em->flush();
+    //         $em->persist($document);
+    //         $em->flush();
 
-            return new JsonResponse("Document created successfully", Response::HTTP_CREATED);
-        } catch (\Exception $exception) {
-            return new JsonResponse(['error' => 'An error occurred while creating the document.'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
+    //         return new JsonResponse("Document created successfully", Response::HTTP_CREATED);
+    //     } catch (\Exception $exception) {
+    //         return new JsonResponse(['error' => 'An error occurred while creating the document.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+    //     }
+    // }
 
     #[Route('api/document/{id}', name:"get_document", methods:["GET"])]
     public function show(int $id, SerializerInterface $serializer): JsonResponse 
@@ -151,8 +151,8 @@ class DocumentController extends AbstractController
     }
 
     // Utility function to generate unique file names
-    private function generateUniqueFileName(): string
-    {
-        return md5(uniqid());
-    }
+//     private function generateUniqueFileName(): string
+//     {
+//         return md5(uniqid());
+//     }
 }

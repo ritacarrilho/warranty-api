@@ -67,32 +67,3 @@ when@test:
                 cost: 12 # Lowest possible value for bcrypt
                 time_cost: 3 # Lowest possible value for argon
                 memory_cost: 10 # Lowest possible value for argon
-
-
-
-
-
-
-
-                       # main:
-        #     stateless: true
-        #     provider: app_user_provider
-        #     json_login:
-        #         check_path: /api/auth
-        #         username_path: email
-        #         password_path: password
-        #         success_handler: lexik_jwt_authentication.handler.authentication_success
-        #         failure_handler: lexik_jwt_authentication.handler.authentication_failure
-        #     jwt: ~
-
-        # login:
-        #     pattern: ^/api/auth
-        #     stateless: true
-        #     provider: app_user_provider
-        #     # anonymous: true
-        #     json_login:
-        #         check_path: /api/auth
-        #         username_path: email
-        #         password_path: password
-        #         success_handler: lexik_jwt_authentication.handler.authentication_success
-        #         failure_handler: lexik_jwt_authentication.handler.authentication_failure

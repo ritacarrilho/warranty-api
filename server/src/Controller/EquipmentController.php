@@ -42,7 +42,7 @@ class EquipmentController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $equipments = $this->equipmentRepository->findByUser($userId);
@@ -85,7 +85,7 @@ class EquipmentController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $requestData = json_decode($request->getContent(), true);
@@ -97,7 +97,7 @@ class EquipmentController extends AbstractController
             $requiredFields = ['serial_code','category', 'name'];
             foreach ($requiredFields as $field) {
                 if (!isset($requestData[$field])) {
-                    throw new HttpException(Response::HTTP_BAD_REQUEST, "Missing required field: $field");
+                    return new JsonResponse(Response::HTTP_BAD_REQUEST, "Missing required field: $field");
                 }
             }
 
@@ -106,7 +106,7 @@ class EquipmentController extends AbstractController
 
             // Check if category and user were found
             if (!$category || !$user) {
-                throw new HttpException(Response::HTTP_NOT_FOUND, "Category or user not found");
+                return new JsonResponse(Response::HTTP_NOT_FOUND, "Category or user not found");
             }
 
             $equipment = new Equipment();
@@ -161,7 +161,7 @@ class EquipmentController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $equipment = $this->equipmentRepository->findEquipmentById($id, $userId);
@@ -186,20 +186,20 @@ class EquipmentController extends AbstractController
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $requestData = json_decode($request->getContent(), true);
 
             // Check if the reference property exists in the request data
             if (!isset($requestData['serial_code'])) {
-                throw new HttpException(Response::HTTP_BAD_REQUEST, "Serial code is required");
+                return new JsonResponse(Response::HTTP_BAD_REQUEST, "Serial code is required");
             }
     
             // Check if the reference is unique
             $existingEquipmentWithCode = $this->equipmentRepository->findOneBy(['serial_code' => $requestData['serial_code']]);
             if ($existingEquipmentWithCode && $existingEquipmentWithCode->getId() !== $currentEquipment->getId()) {
-                throw new HttpException(Response::HTTP_CONFLICT, "Equipment with the provided serial code already exists.");
+                return new JsonResponse(Response::HTTP_CONFLICT, "Equipment with the provided serial code already exists.");
             }
 
             $updatedEquipment = $serializer->deserialize(
@@ -233,7 +233,7 @@ class EquipmentController extends AbstractController
            $userId = $this->jwtMiddleware->getUserId();
    
            if (!$authToken || !$userId) {
-               throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+               return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
            }
    
            $warranties = $this->warrantyRepository->findBy(['equipment' => $equipment]);
@@ -270,7 +270,7 @@ class EquipmentController extends AbstractController
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
             if (!$authToken || !$userId) {
-                throw new HttpException("Bad request", Response::HTTP_BAD_REQUEST);
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
 
             $warranties = $this->warrantyRepository->getWarrantiesForEquipmentAndUser($id, $userId);
