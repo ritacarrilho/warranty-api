@@ -27,7 +27,7 @@ class Equipment
     /**
      * @Groups({"equipment"})
      */
-    #[ORM\Column(length: 150)]
+    #[ORM\Column(length: 150, nullable: true)]
     private ?string $brand = null;
     /**
      * @Groups({"equipment"})
@@ -38,7 +38,7 @@ class Equipment
      * @Groups({"equipment"})
      */
     #[ORM\Column(length: 200, unique: true)]
-    private ?string $serial_code = null;
+    private string $serial_code;
     /**
     * @Groups({"equipment"})
     */
@@ -90,7 +90,7 @@ class Equipment
         return $this->brand;
     }
 
-    public function setBrand(string $brand): static
+    public function setBrand(?string $brand): static
     {
         $this->brand = $brand;
 

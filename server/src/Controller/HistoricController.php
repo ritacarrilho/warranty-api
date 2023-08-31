@@ -89,10 +89,10 @@ class HistoricController extends AbstractController
             $requestData = json_decode($request->getContent(), true);
             
             $equipment->setName($requestData['name'])
-                ->setBrand($requestData['brand'])
-                ->setModel($requestData['model'])
+                ->setBrand($requestData['brand'] ?? null)
+                ->setModel($requestData['model'] ?? null)
                 ->setSerialCode($requestData['serial_code'])
-                ->setPurchaseDate(new \DateTime($requestData['purchase_date']))
+                ->setPurchaseDate(new \DateTime($requestData['purchase_date']) ?? null)
                 ->setIsActive('false');
             
             $em->flush();

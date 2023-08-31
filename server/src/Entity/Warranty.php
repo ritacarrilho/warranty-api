@@ -21,13 +21,13 @@ class Warranty
     /**
     * @Groups({"document"})
     */
-    #[ORM\Column(length: 255, unique: true)]
-    private ?string $reference = null;
+    #[ORM\Column(length: 255, unique: true, nullable: false)]
+    private string $reference;
     /**
     * @Groups({"document"})
     */
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $start_date = null;
+    private \DateTimeInterface $start_date;
     /**
     * @Groups({"document"})
     */

@@ -29,11 +29,6 @@ security:
             logout:
                 path: logout
 
-        # api_register:
-        #     pattern: ^/api/register
-        #     stateless: true
-        #     anonymous: true
-
         api:
             pattern: ^/api
             stateless: true

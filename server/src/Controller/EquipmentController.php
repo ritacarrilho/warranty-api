@@ -111,9 +111,9 @@ class EquipmentController extends AbstractController
 
             $equipment = new Equipment();
             // check request fields
-            $equipment->setName($requestData['name'] ?: null)
-                        ->setBrand($requestData['brand'] ?: null)
-                        ->setModel($requestData['model'] ?: null)
+            $equipment->setName($requestData['name'])
+                        ->setBrand($requestData['brand'] ?? null)
+                        ->setModel($requestData['model'] ?? null)
                         ->setSerialCode($requestData['serial_code'])
                         ->setPurchaseDate(isset($requestData['purchase_date']) ? new \DateTime($requestData['purchase_date']) : null)
                         ->setCategory($category)

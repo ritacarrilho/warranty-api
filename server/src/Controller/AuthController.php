@@ -48,8 +48,8 @@ class AuthController extends AbstractController
     
             $consumer = new Consumer();
             $consumer->setFirstName($requestData['first_name'])
-                ->setLastName($requestData['last_name'] ?: null)
-                ->setPhone($requestData['phone'] ?: null)
+                ->setLastName($requestData['last_name'] ?? null)
+                ->setPhone($requestData['phone'] ?? null)
                 ->setUser($user);
     
             $em->persist($user);

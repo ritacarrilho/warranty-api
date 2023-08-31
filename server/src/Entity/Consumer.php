@@ -26,7 +26,7 @@ class Consumer
     /**
      * @Groups({"consumer_response"})
      */
-    #[ORM\Column(length: 150)]
+    #[ORM\Column(length: 150, nullable: true)]
     private ?string $last_name = null;
 
     /**
@@ -62,7 +62,7 @@ class Consumer
         return $this->last_name;
     }
 
-    public function setLastName(string $last_name): static
+    public function setLastName(?string $last_name): static
     {
         $this->last_name = $last_name;
 
