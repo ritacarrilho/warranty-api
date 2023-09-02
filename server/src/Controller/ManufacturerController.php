@@ -28,6 +28,7 @@ class ManufacturerController extends AbstractController
     {
         try {
             $manufacturers = $this->manufacturerRepository->findAll();
+            // TODO: get all manufacturer wehere user ids
 
             if(empty($manufacturers)) {
                 return new JsonResponse("Manufacturers not found", Response::HTTP_NOT_FOUND);

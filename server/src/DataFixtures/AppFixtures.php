@@ -14,16 +14,13 @@ use Doctrine\Persistence\ObjectManager;
 
 class AppFixtures extends Fixture
 {
-/**
- * @var
- */
     public $category;
     private $pass_hasher;
 
     public function __construct(UserPasswordHasherInterface $passwordHasher)
     {
         $this->pass_hasher = $passwordHasher;
-        $this->category = ["Large Appliances", "Kitchen & Cooking", "Home", "Beauty & Health", "TV & Image & Sound", "Computer", "Smartphone", "Console", "Connected Objects"];
+        $this->category = ["Large Appliances", "Kitchen & Cooking", "Home", "Beauty & Health", "TV & Image & Sound", "Computer", "Smartphone", "Console", "Connected Objects", "Others"];
     }
 
     public function load(ObjectManager $manager): void
@@ -72,7 +69,6 @@ class AppFixtures extends Fixture
     /* CONSUMERS INFO */
     public function loadConsumers($manager)
     {
-        /* Association */
         $test_consumer = new Consumer();
         $test_consumer->setFirstName("User")
                         ->setLastName("Test")
