@@ -17,6 +17,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use App\Repository\WarrantyRepository;
+use App\Service\DocumentService;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class EquipmentController extends AbstractController
@@ -226,7 +227,7 @@ class EquipmentController extends AbstractController
 
 
    #[Route('/api/equipment/{id}', name: 'delete_equipment', methods: ['DELETE'])]
-   public function delete(Equipment $equipment,  EntityManagerInterface $em, Request $request): JsonResponse 
+   public function delete(Equipment $equipment,  EntityManagerInterface $em, Request $request, DocumentService $documentService): JsonResponse 
    {
        try {
            $authToken = $request->headers->get('Authorization');
@@ -237,23 +238,11 @@ class EquipmentController extends AbstractController
            }
    
            $warranties = $this->warrantyRepository->findBy(['equipment' => $equipment]);
+           
            if ($warranties) {
-                // Find and delete associated documents
+                // Use DocumentService to delete associated documents
                 foreach ($warranties as $warranty) {
-                    $documents = $this->documentRepository->findBy(['warranty' => $warranty]);
-
-                    foreach ($documents as $document) {
-                        // Delete the document from the public/uploads/documents directory
-                        $documentPath = $this->getParameter('uploads_directory') . '/' . $document->getName();
-                                    
-                        if (file_exists($documentPath)) {
-                            unlink($documentPath);
-                        }
-
-                        // Remove document entry from the database
-                        $em->remove($document);
-                        $em->flush();
-                    }
+                    $documentService->deleteDocumentsByWarranty($warranty);
                     $em->remove($warranty);
                 }
             }

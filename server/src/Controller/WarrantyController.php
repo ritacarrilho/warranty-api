@@ -9,6 +9,7 @@ use App\Middleware\JwtMiddleware;
 use App\Repository\DocumentRepository;
 use App\Repository\EquipmentRepository;
 use App\Repository\ManufacturerRepository;
+use App\Service\DocumentService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
@@ -263,7 +264,7 @@ class WarrantyController extends AbstractController
 
 
     #[Route('/api/warranty/{id}', name:"delete_warranty", methods:['DELETE'])]
-    public function deleteWarranty(int $id, Request $request, EntityManagerInterface $em): JsonResponse 
+    public function deleteWarranty(int $id, Request $request, EntityManagerInterface $em, DocumentService $documentService): JsonResponse 
     {
         try {
             $authToken = $request->headers->get('Authorization');
@@ -279,20 +280,8 @@ class WarrantyController extends AbstractController
                 return new JsonResponse("Warranty not found", Response::HTTP_NOT_FOUND);
             }
 
-            $documents = $this->documentRepository->findByWarranty($id);
-
-            foreach ($documents as $document) {
-                // Delete the document from the public/uploads/documents directory
-                $documentPath = $this->getParameter('uploads_directory') . '/' . $document->getName();
-                            
-                if (file_exists($documentPath)) {
-                    unlink($documentPath);
-                }
-
-                // Remove document entry from the database
-                $em->remove($document);
-                $em->flush();
-            }
+            // Use the DocumentService to delete associated documents
+            $documentService->deleteDocumentsByWarranty($warranty);
 
             $em->remove($warranty);
             $em->flush();

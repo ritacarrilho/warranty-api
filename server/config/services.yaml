@@ -27,6 +27,12 @@ services:
             $tokenStorage: '@security.token_storage'
             $userRepository: '@App\Repository\UserRepository'
 
+    App\Service\DocumentService:
+        autowire: true
+        autoconfigure: true
+        arguments:
+            $uploadsDirectory: '%kernel.project_dir%/public/uploads/documents'
+
     App\Repository\DocumentRepository:
         arguments: ['@doctrine']
 

@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Document;
+use App\Entity\Warranty;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -30,7 +31,7 @@ class DocumentRepository extends ServiceEntityRepository
            ->getResult();
    }
 
-   public function isDocumentBelongsToUser(int $document_id, int $user_id): array
+   public function isDocumentBelongsToUser(int $document_id, int $user_id): ?Document
    {
         return $this->createQueryBuilder('d')
             ->join('d.warranty', 'w')
@@ -40,9 +41,8 @@ class DocumentRepository extends ServiceEntityRepository
             ->setParameter('userId', $user_id)
             ->setParameter('documentId', $document_id)
             ->getQuery()
-            ->getResult();
+            ->getOneOrNullResult();
    }
-
 
    public function findByUser($user_id): array
    {
@@ -53,6 +53,15 @@ class DocumentRepository extends ServiceEntityRepository
                 ->setParameter('userId', $user_id)
                 ->getQuery()
                 ->getResult();
+   }
+
+   public function findDocumentsByWarranty(Warranty $warranty)
+   {
+       return $this->createQueryBuilder('d')
+           ->where('d.warranty = :warranty')
+           ->setParameter('warranty', $warranty)
+           ->getQuery()
+           ->getResult();
    }
 
 //    /**
