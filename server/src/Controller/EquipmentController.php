@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Category;
+use App\Entity\Document;
 use App\Entity\Equipment;
 use App\Entity\User;
 use App\Repository\EquipmentRepository;
@@ -78,8 +79,8 @@ class EquipmentController extends AbstractController
         }
     }
 
-    #[Route('/api/equipment', name: 'create_equipment', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse 
+    #[Route('/api/document', name: 'upload_document', methods: ['POST'])]
+    public function upload(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
     {
         try {
             $authToken = $request->headers->get('Authorization');
@@ -88,67 +89,57 @@ class EquipmentController extends AbstractController
             if (!$authToken || !$userId) {
                 return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
-
+    
+            $uploadedFile = $request->files->get('path');
+    
+            if (!$uploadedFile) {
+                return new JsonResponse('No document uploaded', Response::HTTP_BAD_REQUEST);
+            }
+    
+            // Generate a unique document name
+            $originalDocName = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
+            $newDocName = $originalDocName . '-' . uniqid() . '.' . $uploadedFile->guessExtension();
+    
+            // Move the uploaded document to the public/uploads/documents directory
+            $uploadedFile->move($this->getParameter('uploads_directory'), $newDocName);
+    
             $requestData = json_decode($request->getContent(), true);
-
-            $categoryRepository = $em->getRepository(Category::class);
-            $userRepository = $em->getRepository(User::class);
-
-            // check required fields
-            $requiredFields = ['serial_code','category', 'name'];
-            foreach ($requiredFields as $field) {
-                if (!isset($requestData[$field])) {
-                    return new JsonResponse(Response::HTTP_BAD_REQUEST, "Missing required field: $field");
-                }
+    
+            // Fetch the warranty entity by ID
+            $warrantyId = $requestData['warranty_id'];
+            $warranty = $entityManager->getRepository(Warranty::class)->find($warrantyId);
+    
+            if (!$warranty) {
+                return new JsonResponse('Warranty not found', Response::HTTP_NOT_FOUND);
             }
-
-            $category = $categoryRepository->find($requestData['category']);
-            $user = $userRepository->find($userId);
-
-            // Check if category and user were found
-            if (!$category || !$user) {
-                return new JsonResponse(Response::HTTP_NOT_FOUND, "Category or user not found");
+    
+            // Save document information to the database and associate it with the warranty
+            $document = new Document();
+            $document->setName($newDocName);
+            $document->setPath('/' . $newDocName);
+            $document->setWarranty($warranty);
+    
+            $entityManager->persist($document);
+            $entityManager->flush();
+    
+            // Serialize the document including the image data
+            $serializedDocument = $serializer->serialize($document, 'json');
+    
+            if (!$serializedDocument) {
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
-
-            $equipment = new Equipment();
-            // check request fields
-            $equipment->setName($requestData['name'])
-                        ->setBrand($requestData['brand'] ?? null)
-                        ->setModel($requestData['model'] ?? null)
-                        ->setSerialCode($requestData['serial_code'])
-                        ->setPurchaseDate(isset($requestData['purchase_date']) ? new \DateTime($requestData['purchase_date']) : null)
-                        ->setCategory($category)
-                        ->setUser($user);
-
-            $em->persist($equipment);
-            $em->flush();
-
-            $equipmentData = [
-                'id' => $equipment->getId(),
-                'name' => $equipment->getName(),
-                'brand' => $equipment->getBrand(),
-                'model' => $equipment->getModel(),
-                'serial_code' => $equipment->getSerialCode(),
-                'purchase_date' => $equipment->getFormattedPurchaseDate(),
-                'category' => [
-                    'id' => $category->getId(),
-                    'label' => $category->getLabel(),
-                ],
-                'user' => [
-                    'id' => $user->getId(),
-                    'email' => $user->getEmail(),
-                ]
-            ];
-
-            $serializedEquipment = $serializer->serialize($equipmentData, 'json');
-
-            $responseData = [
-                'message' => 'Equipment created successfully',
-                'data' => json_decode($serializedEquipment, true)
+    
+            $imagePath = $this->getParameter('uploads_directory') . '/' . $newDocName;
+            $imageData = file_get_contents($imagePath);
+            $imageData = base64_encode($imageData);
+    
+            $documentData = [
+                'document' => $serializedDocument,
+                'imageData' => $imageData,
             ];
     
-            return new JsonResponse($responseData, Response::HTTP_CREATED);
-        }  catch (HttpException $exception) {
+            return new JsonResponse($documentData, Response::HTTP_CREATED);
+        } catch (HttpException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
     }
@@ -238,7 +229,7 @@ class EquipmentController extends AbstractController
            }
    
            $warranties = $this->warrantyRepository->findBy(['equipment' => $equipment]);
-           
+
            if ($warranties) {
                 // Use DocumentService to delete associated documents
                 foreach ($warranties as $warranty) {

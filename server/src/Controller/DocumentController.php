@@ -83,12 +83,8 @@ class DocumentController extends AbstractController
         }
     }
 
-
-
-
-
     #[Route('/api/document/{id}', name: 'get_document', methods: ['GET'])]
-    public function show(Request $request, Document $document, SerializerInterface $serializer): JsonResponse
+    public function show(Request $request, Document $document): JsonResponse
     {
         try {
             $authToken = $request->headers->get('Authorization');
@@ -141,47 +137,56 @@ class DocumentController extends AbstractController
     }
 
     #[Route('/api/document', name: 'upload_document', methods: ['POST'])]
-    public function upload(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse {
+    public function upload(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
+    {
         try {
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
-
+    
             if (!$authToken || !$userId) {
                 return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
             }
-
+    
             $uploadedFile = $request->files->get('path');
-
+    
             if (!$uploadedFile) {
                 return new JsonResponse('No document uploaded', Response::HTTP_BAD_REQUEST);
             }
-
+    
             // Generate a unique document name
             $originalDocName = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
             $newDocName = $originalDocName . '-' . uniqid() . '.' . $uploadedFile->guessExtension();
-
+    
             // Move the uploaded document to the public/uploads/documents directory
             $uploadedFile->move($this->getParameter('uploads_directory'), $newDocName);
+    
+            $requestData = json_decode($request->getContent(), true);
 
             // Save document information to the database
             $document = new Document();
             $document->setName($newDocName);
             $document->setPath('/' . $newDocName);
-
+            $document->setWarranty($requestData['warranty_id']);
+    
             $entityManager->persist($document);
             $entityManager->flush();
-
+    
             // Serialize the document including the image data
-            $serializedDocument = $serializer->serialize($document, 'json', ['groups' => 'document']);
+            $serializedDocument = $serializer->serialize($document, 'json');
+
+            if(!$serializedDocument) {
+                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
+            }
+
             $imagePath = $this->getParameter('uploads_directory') . '/' . $newDocName;
             $imageData = file_get_contents($imagePath);
             $imageData = base64_encode($imageData);
-
+    
             $documentData = [
                 'document' => $serializedDocument,
                 'imageData' => $imageData,
             ];
-
+    
             return new JsonResponse($documentData, Response::HTTP_CREATED);
         } catch (HttpException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());

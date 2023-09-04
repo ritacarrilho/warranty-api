@@ -172,4 +172,36 @@ class HttpHelper {
       return null;
     }
   }
+
+
+  Future<Map<String, dynamic>?> uploadDocument(String filePath) async {
+    try {
+      final _token = await getToken();
+
+      if (_token == null) {
+        throw Exception('Token is missing. Authenticate first.');
+      }
+
+      var headers = {
+        'Authorization': 'Bearer $_token',
+      };
+
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/api/document'))
+        ..headers.addAll(headers)
+        ..files.add(await http.MultipartFile.fromPath('path', filePath));
+
+      var response = await request.send();
+
+      if (response.statusCode == 201) {
+        var responseData = await response.stream.toBytes();
+        return json.decode(utf8.decode(responseData));
+      } else {
+        throw Exception('Failed to upload document');
+      }
+    } catch (error) {
+      print('Error uploading document: $error');
+      return null;
+    }
+  }
+
 }
