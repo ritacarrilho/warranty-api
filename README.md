@@ -29,7 +29,7 @@ Implementation of controllers CRUD for each API endpoint. Data fetched from Data
 Private Api with authentification to fetch, delete, modify or add new data. 
 
 ## Frontend
-Front end developed in React and styled with SCSS. Development of components and requests made with library Axios.
+Front end developed in Flutter. Development of widgets, pages and Http requests.
 
 ## Functionalities 
 * Creation of accounts
