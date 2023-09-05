@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:warranty_app/models/warranty.dart';
 import 'package:warranty_app/services/helper.dart';
+import 'package:warranty_app/utils/constants.dart';
 import 'package:warranty_app/widgets/warranty_home_card.dart';
 
-class WarrantyHomeSection extends StatefulWidget {
-  WarrantyHomeSection();
 
+class WarrantiesHomeSection extends StatefulWidget {
   @override
-  _WarrantyHomeSectionState createState() => _WarrantyHomeSectionState();
+  _WarrantiesHomeSectionState createState() => _WarrantiesHomeSectionState();
 }
 
-class _WarrantyHomeSectionState extends State<WarrantyHomeSection> {
+class _WarrantiesHomeSectionState extends State<WarrantiesHomeSection> {
   List<Warranty> warranties = [];
   HttpHelper helper = HttpHelper();
 
@@ -39,19 +39,17 @@ class _WarrantyHomeSectionState extends State<WarrantyHomeSection> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 200, // Adjust the height as needed
-      child: warranties.isNotEmpty
-          ? ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: warranties.length,
-        itemBuilder: (context, index) {
-          return WarrantyHomeCard(warranty: warranties[index]);
-        },
-      )
-          : Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+
+    return Container(
+          height: 200.0, // Adjust the height as needed
+          child: PageView.builder(
+            itemCount: warranties.length,
+            itemBuilder: (context, index) {
+              return WarrantyHomeCard(
+                warranty: warranties[index],
+              );
+            },
+          ),
+        );
   }
 }

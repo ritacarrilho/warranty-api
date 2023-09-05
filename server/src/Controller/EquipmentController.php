@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use App\Repository\WarrantyRepository;
 use App\Service\DocumentService;
+use App\Service\ManufacturerService;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class EquipmentController extends AbstractController
@@ -218,7 +219,7 @@ class EquipmentController extends AbstractController
 
 
    #[Route('/api/equipment/{id}', name: 'delete_equipment', methods: ['DELETE'])]
-   public function delete(Equipment $equipment,  EntityManagerInterface $em, Request $request, DocumentService $documentService): JsonResponse 
+   public function delete(Equipment $equipment,  EntityManagerInterface $em, Request $request, ManufacturerService $manufacturerService, DocumentService $documentService): JsonResponse 
    {
        try {
            $authToken = $request->headers->get('Authorization');
@@ -231,13 +232,14 @@ class EquipmentController extends AbstractController
            $warranties = $this->warrantyRepository->findBy(['equipment' => $equipment]);
 
            if ($warranties) {
-                // Use DocumentService to delete associated documents
+                // Use DocumentService and Manufacturer to delete associated documents and manufacturers
                 foreach ($warranties as $warranty) {
                     $documentService->deleteDocumentsByWarranty($warranty);
+                    $manufacturerService->checkAndDeleteManufacturer($warranty);
                     $em->remove($warranty);
                 }
             }
-   
+
            // Delete the equipment 
            $em->remove($equipment);
            $em->flush();

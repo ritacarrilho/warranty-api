@@ -1,22 +1,23 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:warranty_app/services/helper.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:io';
 
-class DocumentUploadWidget extends StatefulWidget {
+
+class UploadFilePage extends StatefulWidget {
+  const UploadFilePage({super.key});
+
   @override
-  _DocumentUploadWidgetState createState() => _DocumentUploadWidgetState();
+  State<UploadFilePage> createState() => _UploadFilePageState();
 }
 
-class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
+class _UploadFilePageState extends State<UploadFilePage> {
   final HttpHelper httpHelper = HttpHelper();
   TextEditingController _controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return  Scaffold(
       appBar: AppBar(
         title: Text('Upload Document'),
       ),
@@ -24,10 +25,10 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+          children: <Widget>[
             TextField(
               controller: _controller,
-              decoration: InputDecoration(labelText: 'Enter Document Path'),
+              decoration: InputDecoration(labelText: 'Enter Document Name'),
             ),
             SizedBox(height: 16),
             ElevatedButton(

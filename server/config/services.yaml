@@ -33,6 +33,11 @@ services:
         arguments:
             $uploadsDirectory: '%kernel.project_dir%/public/uploads/documents'
 
+    App\Service\ManufacturerService:
+        autowire: true
+        autoconfigure: true
+
+
     App\Repository\DocumentRepository:
         arguments: ['@doctrine']
 

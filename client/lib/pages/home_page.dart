@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:warranty_app/sections/warranties_home_section.dart';
 import 'package:warranty_app/services/helper.dart';
-import 'package:file_picker/file_picker.dart';
-
+import 'package:warranty_app/utils/constants.dart';
+import 'package:warranty_app/widgets/warranty_home_card.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,75 +13,27 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final HttpHelper httpHelper = HttpHelper();
-  TextEditingController _controller = TextEditingController();
-
   @override
   Widget build(BuildContext context) {
-    return  Scaffold(
+    return Scaffold(
       appBar: AppBar(
-        title: Text('Upload Document'),
+        title: Text('Your App Title'), // Replace with your app title
+        backgroundColor: mediumGreen,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(labelText: 'Enter Document Name'),
+          children: [
+            const SizedBox(height: 40),
+            Text(
+              "Next Expiring Warranties",
+              style: TextStyle(
+                color: darkGreen,
+                fontSize: titles,
+                  fontWeight: FontWeight.w600,
+              ),
             ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  FilePickerResult? result = await FilePicker.platform.pickFiles(
-                    type: FileType.custom,
-                    allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
-                  );
-
-                  if (result != null && result.files.isNotEmpty) {
-                    final filePath = result.files.first.path!;
-                    final uploadResponse = await httpHelper.uploadDocument(filePath);
-
-                    if (uploadResponse != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Document uploaded successfully'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      _controller.clear();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error uploading document'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('No file selected'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                } catch (error) {
-                  // Handle any errors that may occur
-                  print('Error: $error');
-                  // Show an error message to the user
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('An error occurred: $error'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-              child: Text('Upload Document'),
-            ),
+            const SizedBox(height: 10),
+            WarrantiesHomeSection(),
           ],
         ),
       ),
