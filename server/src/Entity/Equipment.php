@@ -22,7 +22,7 @@ class Equipment
     /**
      * @Groups({"equipment"})
      */
-    #[ORM\Column(length: 150)]
+    #[ORM\Column(length: 150, nullable: false)]
     private ?string $name = null;
     /**
      * @Groups({"equipment"})
@@ -37,7 +37,7 @@ class Equipment
     /**
      * @Groups({"equipment"})
      */
-    #[ORM\Column(length: 200, unique: true)]
+    #[ORM\Column(length: 200, unique: true, nullable: false)]
     private string $serial_code;
     /**
     * @Groups({"equipment"})
@@ -73,7 +73,7 @@ class Equipment
         return $this->id;
     }
 
-    public function getName(): ?string
+    public function getName(): string
     {
         return $this->name;
     }
@@ -109,7 +109,7 @@ class Equipment
         return $this;
     }
 
-    public function getSerialCode(): ?string
+    public function getSerialCode(): string
     {
         return $this->serial_code;
     }

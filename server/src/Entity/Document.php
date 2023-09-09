@@ -20,7 +20,7 @@ class Document
     /**
     * @Groups({"document"})
     */
-    #[ORM\Column(length: 100)]
+    #[ORM\Column(length: 100, nullable: false)]
     private ?string $name = null;
     /**
     * @Groups({"document"})
@@ -39,7 +39,7 @@ class Document
         return $this->id;
     }
 
-    public function getName(): ?string
+    public function getName(): string
     {
         return $this->name;
     }
@@ -63,12 +63,12 @@ class Document
         return $this;
     }
 
-    public function getWarranty(): ?Warranty
+    public function getWarranty(): Warranty
     {
         return $this->warranty;
     }
 
-    public function setWarranty(?Warranty $warranty): static
+    public function setWarranty(Warranty $warranty): static
     {
         $this->warranty = $warranty;
 

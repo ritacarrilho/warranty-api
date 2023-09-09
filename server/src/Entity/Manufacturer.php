@@ -16,10 +16,10 @@ class Manufacturer
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 150)]
+    #[ORM\Column(length: 150, nullable: false)]
     private ?string $name = null;
 
-    #[ORM\Column(length: 150)]
+    #[ORM\Column(length: 150, nullable: true)]
     private ?string $email = null;
     
     #[ORM\Column(length: 80, nullable: true)]
@@ -50,7 +50,7 @@ class Manufacturer
         return $this->id;
     }
 
-    public function getName(): ?string
+    public function getName(): string
     {
         return $this->name;
     }

@@ -20,7 +20,7 @@ class Consumer
     /**
      * @Groups({"consumer_response"})
      */
-    #[ORM\Column(length: 150)]
+    #[ORM\Column(length: 150, nullable: false)]
     private ?string $first_name = null;
 
     /**
@@ -45,7 +45,7 @@ class Consumer
         return $this->id;
     }
 
-    public function getFirstName(): ?string
+    public function getFirstName(): string
     {
         return $this->first_name;
     }
@@ -81,7 +81,7 @@ class Consumer
         return $this;
     }
 
-    public function getUser(): ?User
+    public function getUser(): User
     {
         return $this->user;
     }

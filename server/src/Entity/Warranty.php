@@ -31,7 +31,7 @@ class Warranty
     /**
     * @Groups({"document"})
     */
-    #[ORM\Column(type: Types::DATE_MUTABLE)]
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: false)]
     private ?\DateTimeInterface $end_date = null;
 
     #[ORM\ManyToOne(inversedBy: 'warranties')]
@@ -54,7 +54,7 @@ class Warranty
         return $this->id;
     }
 
-    public function getReference(): ?string
+    public function getReference(): string
     {
         return $this->reference;
     }
@@ -78,7 +78,7 @@ class Warranty
         return $this;
     }
 
-    public function getEndDate(): ?\DateTimeInterface
+    public function getEndDate(): \DateTimeInterface
     {
         return $this->end_date;
     }
