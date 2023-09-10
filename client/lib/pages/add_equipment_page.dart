@@ -12,11 +12,11 @@ class AddEquipmentPage extends StatefulWidget {
 }
 
 class _AddEquipmentPageState extends State<AddEquipmentPage> {
-  TextEditingController _nameTextEditingController = TextEditingController();
-  TextEditingController _modelTextEditingController = TextEditingController();
-  TextEditingController _brandTextEditingController = TextEditingController();
-  TextEditingController _serialCodeTextEditingController = TextEditingController();
-  TextEditingController _purchaseDateTextEditingController = TextEditingController();
+  final TextEditingController _nameTextEditingController = TextEditingController();
+  final TextEditingController _modelTextEditingController = TextEditingController();
+  final TextEditingController _brandTextEditingController = TextEditingController();
+  final TextEditingController _serialCodeTextEditingController = TextEditingController();
+  final TextEditingController _purchaseDateTextEditingController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final HttpHelper httpHelper = HttpHelper();
 
@@ -91,7 +91,7 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
 
   Future<void> fetchCategories() async {
     try {
-      final HttpHelper httpHelper = HttpHelper(); // Instantiate your HTTP helper class
+      final HttpHelper httpHelper = HttpHelper();
       final List<Category>? fetchedCategories = await httpHelper.getCategories();
 
       if (fetchedCategories != null) {
@@ -106,7 +106,6 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Form is valid, perform the HTTP POST request here
       try {
         final addedEquipment = await httpHelper.postEquipment(equipment);
         Navigator.pop(context);
@@ -154,12 +153,10 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
                     });
                   },
                   items: [
-                    // Default "Select Category" item with a value of 0
-                    DropdownMenuItem<int>(
+                    const DropdownMenuItem<int>(
                       value: 0,
                       child: Text('Select Category'),
                     ),
-                    // Add your categories here
                     ...(categories?.map((Category category) {
                       return DropdownMenuItem<int>(
                         value: category.id,
@@ -225,14 +222,15 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
                   controller: _purchaseDateTextEditingController,
                   decoration: const InputDecoration(
                     labelText: 'Purchase Date - YYYY-MM-DD',
-                    border: OutlineInputBorder(), ),
+                    border: OutlineInputBorder(),
+                  ),
                 ),
               ),
               CustomButton(
                 textColor: lightWhite,
                 backgroundColor: mediumGreen,
                 text: "Create",
-                onPressed: _submitForm, // Call _submitForm when the button is pressed
+                onPressed: _submitForm,
               ),
             ],
           ),
