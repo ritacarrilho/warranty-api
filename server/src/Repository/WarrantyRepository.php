@@ -56,28 +56,23 @@ class WarrantyRepository extends ServiceEntityRepository
        ->getResult();
     }
 
-//    /**
-//     * @return Warranty[] Returns an array of Warranty objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('w')
-//            ->andWhere('w.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('w.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    public function countWarrantiesByManufacturer($manufacturerId)
+    {
+        return $this->createQueryBuilder('w')
+            ->select('COUNT(w.id)')
+            ->where('w.manufacturer = :manufacturerId')
+            ->setParameter('manufacturerId', $manufacturerId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 
-//    public function findOneBySomeField($value): ?Warranty
-//    {
-//        return $this->createQueryBuilder('w')
-//            ->andWhere('w.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    public function getManufacturerIdForWarranty($warrantyId)
+    {
+        return $this->createQueryBuilder('w')
+            ->select('w.manufacturer')
+            ->where('w.id = :warrantyId')
+            ->setParameter('warrantyId', $warrantyId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

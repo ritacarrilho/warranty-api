@@ -43,17 +43,20 @@ class DocumentService
         try {
             $documents = $this->documentRepository->findDocumentsByWarranty($warranty);
 
-            foreach ($documents as $document) {
-                $documentPath = $this->uploadsDirectory . '/' . $document->getPath();
-
-                if (file_exists($documentPath)) {
-                    unlink($documentPath);
+            if($documents) {
+                foreach ($documents as $document) {
+                    $documentPath = $this->uploadsDirectory . '/' . $document->getPath();
+    
+                    if (file_exists($documentPath)) {
+                        unlink($documentPath);
+                    }
+    
+                    $this->entityManager->remove($document);
                 }
-
-                $this->entityManager->remove($document);
+    
+                $this->entityManager->flush();
             }
 
-            $this->entityManager->flush();
         } catch (\Exception $exception) {
             throw new HttpException(500, 'Error deleting associated documents');
         }

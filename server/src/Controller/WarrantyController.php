@@ -280,6 +280,15 @@ class WarrantyController extends AbstractController
                 return new JsonResponse("Warranty not found", Response::HTTP_NOT_FOUND);
             }
 
+            // check if there are any warranties left associated to a manufacturer
+            $manufacturerId = $warranty->getManufacturer()->getId();
+            $manufacturerWarrantiesCount = $this->warrantyRepository->countWarrantiesByManufacturer($manufacturerId);
+
+            if ($manufacturerWarrantiesCount <= 1) {
+                $manufacturer = $this->manufacturerRepository->find($manufacturerId);
+                $em->remove($manufacturer);
+            }
+
             // Use the DocumentService to delete associated documents
             $documentService->deleteDocumentsByWarranty($warranty);
 

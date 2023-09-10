@@ -80,70 +80,138 @@ class EquipmentController extends AbstractController
         }
     }
 
-    #[Route('/api/document', name: 'upload_document', methods: ['POST'])]
-    public function upload(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
+
+    #[Route('/api/equipment', name: 'create_equipment', methods: ['POST'])]
+    public function create(Request $request, EntityManagerInterface $em, SerializerInterface $serializer): JsonResponse 
     {
         try {
             $authToken = $request->headers->get('Authorization');
             $userId = $this->jwtMiddleware->getUserId();
     
             if (!$authToken || !$userId) {
-                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
+                return $this->json(['error' => 'Bad request'], Response::HTTP_BAD_REQUEST);
             }
-    
-            $uploadedFile = $request->files->get('path');
-    
-            if (!$uploadedFile) {
-                return new JsonResponse('No document uploaded', Response::HTTP_BAD_REQUEST);
-            }
-    
-            // Generate a unique document name
-            $originalDocName = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
-            $newDocName = $originalDocName . '-' . uniqid() . '.' . $uploadedFile->guessExtension();
-    
-            // Move the uploaded document to the public/uploads/documents directory
-            $uploadedFile->move($this->getParameter('uploads_directory'), $newDocName);
     
             $requestData = json_decode($request->getContent(), true);
+            $categoryRepository = $em->getRepository(Category::class);
+            $userRepository = $em->getRepository(User::class);
     
-            // Fetch the warranty entity by ID
-            $warrantyId = $requestData['warranty_id'];
-            $warranty = $entityManager->getRepository(Warranty::class)->find($warrantyId);
-    
-            if (!$warranty) {
-                return new JsonResponse('Warranty not found', Response::HTTP_NOT_FOUND);
+            // Check required fields
+            $requiredFields = ['serial_code', 'category', 'name'];
+            foreach ($requiredFields as $field) {
+                if (!isset($requestData[$field])) {
+                    return $this->json(['error' => `Missing required field $field`], Response::HTTP_BAD_REQUEST);
+                }
             }
     
-            // Save document information to the database and associate it with the warranty
-            $document = new Document();
-            $document->setName($newDocName);
-            $document->setPath('/' . $newDocName);
-            $document->setWarranty($warranty);
+            $category = $categoryRepository->find($requestData['category']);
+            $user = $userRepository->find($userId);
     
-            $entityManager->persist($document);
-            $entityManager->flush();
-    
-            // Serialize the document including the image data
-            $serializedDocument = $serializer->serialize($document, 'json');
-    
-            if (!$serializedDocument) {
-                return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
+            // Check if category and user were found
+            if (!$category || !$user) {
+                return $this->json(['error' => 'Category or user not found'], Response::HTTP_NOT_FOUND);
             }
     
-            $imagePath = $this->getParameter('uploads_directory') . '/' . $newDocName;
-            $imageData = file_get_contents($imagePath);
-            $imageData = base64_encode($imageData);
+            $equipment = new Equipment();
+            // Check request fields
+            $equipment->setName($requestData['name'])
+                        ->setBrand($requestData['brand'] ?? null)
+                        ->setModel($requestData['model'] ?? null)
+                        ->setSerialCode($requestData['serial_code'])
+                        ->setPurchaseDate(isset($requestData['purchase_date']) ? new \DateTime($requestData['purchase_date']) : null)
+                        ->setCategory($category)
+                        ->setUser($user);
     
-            $documentData = [
-                'document' => $serializedDocument,
-                'imageData' => $imageData,
+            $em->persist($equipment);
+            $em->flush();
+    
+            $equipmentData = [
+                'id' => $equipment->getId(),
+                'name' => $equipment->getName(),
+                'brand' => $equipment->getBrand(),
+                'model' => $equipment->getModel(),
+                'serial_code' => $equipment->getSerialCode(),
+                'purchase_date' => $equipment->getFormattedPurchaseDate(),
+                'category' => [
+                    'id' => $category->getId(),
+                    'label' => $category->getLabel(),
+                ],
+                'user' => [
+                    'id' => $user->getId(),
+                    'email' => $user->getEmail(),
+                ]
             ];
     
-            return new JsonResponse($documentData, Response::HTTP_CREATED);
+            return $this->json(['message' => 'Equipment created successfully', 'data' => $equipmentData], Response::HTTP_CREATED);
         } catch (HttpException $exception) {
-            return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
+            return $this->json(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
     }
+
+    // #[Route('/api/document', name: 'upload_document', methods: ['POST'])]
+    // public function upload(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
+    // {
+    //     try {
+    //         $authToken = $request->headers->get('Authorization');
+    //         $userId = $this->jwtMiddleware->getUserId();
+    
+    //         if (!$authToken || !$userId) {
+    //             return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
+    //         }
+    
+    //         $uploadedFile = $request->files->get('path');
+    
+    //         if (!$uploadedFile) {
+    //             return new JsonResponse('No document uploaded', Response::HTTP_BAD_REQUEST);
+    //         }
+    
+    //         // Generate a unique document name
+    //         $originalDocName = pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME);
+    //         $newDocName = $originalDocName . '-' . uniqid() . '.' . $uploadedFile->guessExtension();
+    
+    //         // Move the uploaded document to the public/uploads/documents directory
+    //         $uploadedFile->move($this->getParameter('uploads_directory'), $newDocName);
+    
+    //         $requestData = json_decode($request->getContent(), true);
+    
+    //         // Fetch the warranty entity by ID
+    //         $warrantyId = $requestData['warranty_id'];
+    //         $warranty = $entityManager->getRepository(Warranty::class)->find($warrantyId);
+    
+    //         if (!$warranty) {
+    //             return new JsonResponse('Warranty not found', Response::HTTP_NOT_FOUND);
+    //         }
+    
+    //         // Save document information to the database and associate it with the warranty
+    //         $document = new Document();
+    //         $document->setName($newDocName);
+    //         $document->setPath('/' . $newDocName);
+    //         $document->setWarranty($warranty);
+    
+    //         $entityManager->persist($document);
+    //         $entityManager->flush();
+    
+    //         // Serialize the document including the image data
+    //         $serializedDocument = $serializer->serialize($document, 'json');
+    
+    //         if (!$serializedDocument) {
+    //             return new JsonResponse("Bad request", Response::HTTP_BAD_REQUEST);
+    //         }
+    
+    //         $imagePath = $this->getParameter('uploads_directory') . '/' . $newDocName;
+    //         $imageData = file_get_contents($imagePath);
+    //         $imageData = base64_encode($imageData);
+    
+    //         $documentData = [
+    //             'document' => $serializedDocument,
+    //             'imageData' => $imageData,
+    //         ];
+    
+    //         return new JsonResponse($documentData, Response::HTTP_CREATED);
+    //     } catch (HttpException $exception) {
+    //         return new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode());
+    //     }
+    // }
 
 
     #[Route('api/equipment/{id}', name:"get_equipment", methods:["GET"])]
