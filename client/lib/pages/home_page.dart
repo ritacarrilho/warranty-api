@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:warranty_app/sections/warranties_home_section.dart';
-import 'package:warranty_app/services/helper.dart';
 import 'package:warranty_app/utils/constants.dart';
-import 'package:warranty_app/widgets/warranty_home_card.dart';
+import 'package:warranty_app/widgets/bottom_nav_menu.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,11 +11,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+    _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Your App Title'), // Replace with your app title
+        title: Text('Welcome Friend'),
         backgroundColor: mediumGreen,
       ),
       body: SingleChildScrollView(
@@ -29,14 +35,25 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(
                 color: darkGreen,
                 fontSize: titles,
-                  fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 50),
             WarrantiesHomeSection(),
+            const SizedBox(height: 10),
+            // const BottomNavigationMenu()
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigation(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }
 }
+
+
+
+
+

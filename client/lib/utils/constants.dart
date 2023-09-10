@@ -14,3 +14,27 @@ double titles = 25;
 FontWeight titleWeight = FontWeight.w600;
 double body = 15;
 FontWeight bodyWeight = FontWeight.w400;
+
+const List<Widget> pages_menu_icons = <Widget>[
+  Icon(
+    Icons.home,
+    size: 150,
+  ),
+  Icon(
+    Icons.crop_square,
+    size: 150,
+  ),
+  Icon(
+    Icons.lock_clock,
+    size: 150,
+  ),
+  Icon(
+    Icons.file_copy,
+    size: 150,
+  ),
+  Icon(
+    Icons.settings,
+    size: 150,
+  ),
+];
+

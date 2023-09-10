@@ -1,5 +1,5 @@
 class Category {
-  String id;
+  int id;
   String label;
 
   Category({ required this.id, required this.label});
