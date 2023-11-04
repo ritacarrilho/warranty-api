@@ -1,16 +1,40 @@
-# warranty_app
+# Warranty Mobile Application
 
-Warranty management mobile app.
+## Table of contents
+* [General Info](#general-info)
+* [Technologies](#technologies)
+* [Backend](#back-end)
+* [Api](#api)
+* [Frontend](#front-end)
+* [Functionalities](#functionalities)
 
-## Getting Started
+## General Info
+Mobile application and Api for equipments and warranties management.
 
-This project is a starting point for a Flutter application.
+## Technologies:
+* Symfony
+* MySQL
+* Flutter
+* Docker
 
-A few resources to get you started if this is your first Flutter project:
+## Backend
+Backend and API developed in Symfony, Database in MySQL.
+Creation of accounts, generation of JWT token and implementation of authentication system.
+Access to data restricted according to each user, they can only access their data. Authentification sent in requests header to verify the user connected.
+All passwords are hashed when saved in the database and they are never sent in the API responses.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Api
+API Rest developed without framework or API bundle, entities added to Api with the Symfony bundle Doctrine Annotation. 
+Implementation of controllers CRUD for each API endpoint. Data fetched from Database from queries in the repositories.
+Private Api with authentification to fetch, delete, modify or add new data. 
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Frontend
+Front end developed in Flutter. Development of widgets, pages and Http requests.
+
+## Functionalities 
+* Creation of accounts
+* Equipments management
+* Management of warranties associated with equipments 
+* Management of manufactureres and documents associated with warranties
+* Historic management
+ 
