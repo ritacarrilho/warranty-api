@@ -31,7 +31,7 @@ Private Api with authentification to fetch, delete, modify or add new data.
 ## Frontend
 Front end developed in Flutter. Development of widgets, pages and Http requests.
 
-## Functionalities 
+## Features
 * Creation of accounts
 * Equipments management
 * Management of warranties associated with equipments 
